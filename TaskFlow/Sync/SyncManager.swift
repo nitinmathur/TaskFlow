@@ -202,7 +202,6 @@ class SyncManager: ObservableObject {
 
         if elapsed >= pushDebounce {
             status = .syncing
-            lastLocalChange = nil
         } else {
             status = .localChanges
         }
@@ -310,6 +309,7 @@ class SyncManager: ObservableObject {
         }
 
         lastSyncTime = Date()
+        lastLocalChange = nil
         status = .inSync
     }
 
@@ -338,6 +338,7 @@ class SyncManager: ObservableObject {
         }
 
         lastSyncTime = Date()
+        lastLocalChange = nil
         status = .inSync
     }
 

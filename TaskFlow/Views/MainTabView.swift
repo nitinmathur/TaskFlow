@@ -38,12 +38,6 @@ struct MainTabView: View {
         }
         .frame(minWidth: 900, minHeight: 500)
         .onAppear { syncManager.checkForRemoteChanges() }
-        .onChange(of: tasks) { _, _ in
-            syncManager.markLocalChange()
-        }
-        .onChange(of: notes) { _, _ in
-            syncManager.markLocalChange()
-        }
         .onChange(of: syncManager.status) { _, newStatus in
             if newStatus == .syncing {
                 if syncManager.detectLocalAhead() {
@@ -51,6 +45,9 @@ struct MainTabView: View {
                 } else {
                     pullChanges()
                 }
+            } else if newStatus == .conflict {
+                // TODO: Show conflict resolution UI
+                print("Sync conflict detected - manual intervention required")
             }
         }
     }
