@@ -117,6 +117,10 @@ class SyncManager: ObservableObject {
         startFileWatcher()
     }
 
+    deinit {
+        fileWatcher?.cancel()
+    }
+
     private func setupDirectories() {
         try? FileManager.default.createDirectory(at: tasksURL, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: notesURL, withIntermediateDirectories: true)
@@ -207,6 +211,7 @@ class SyncManager: ObservableObject {
     }
 
     func pushNotes(_ notes: [Note]) throws {
+        status = .syncing
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = .prettyPrinted
@@ -228,6 +233,9 @@ class SyncManager: ObservableObject {
                 }
             }
         }
+
+        lastSyncTime = Date()
+        status = .inSync
     }
 
     // MARK: - Pull (Shared → Local)
@@ -280,6 +288,7 @@ class SyncManager: ObservableObject {
     }
 
     func pullNotes(context: ModelContext, localNotes: [Note]) throws -> [Note] {
+        status = .syncing
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
 
@@ -288,6 +297,7 @@ class SyncManager: ObservableObject {
         var remoteIDs = Set<UUID>()
 
         guard let files = try? FileManager.default.contentsOfDirectory(at: notesURL, includingPropertiesForKeys: nil) else {
+            status = .inSync
             return []
         }
 
@@ -301,7 +311,8 @@ class SyncManager: ObservableObject {
                 syncable.apply(to: localNote)
                 updatedNotes.append(localNote)
             } else {
-                let newNote = Note(title: syncable.title, body: syncable.body, position: syncable.position)
+                let newNote = Note(title: syncable.title, body: syncable.body,
+                                 position: syncable.position, folderName: syncable.folderName)
                 newNote.id = syncable.id
                 newNote.createdAt = syncable.createdAt
                 newNote.updatedAt = syncable.updatedAt
@@ -313,6 +324,10 @@ class SyncManager: ObservableObject {
         for note in localNotes where !remoteIDs.contains(note.id) {
             context.delete(note)
         }
+
+        lastSyncTime = Date()
+        pendingRemoteChanges = 0
+        status = .inSync
 
         return updatedNotes
     }
