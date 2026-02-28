@@ -13,14 +13,6 @@ enum Priority: Int, Codable, CaseIterable {
         case .low: "Low"
         }
     }
-
-    var color: String {
-        switch self {
-        case .high: "red"
-        case .medium: "orange"
-        case .low: "blue"
-        }
-    }
 }
 
 @Model
@@ -28,25 +20,32 @@ final class TodoTask {
     var id: UUID = UUID()
     var title: String = ""
     var taskDescription: String?
-    var category: Category?
+    var columnRaw: String = Column.work.rawValue
     var priorityRaw: Int = Priority.medium.rawValue
+    var position: Int = 0
     var dueDate: Date?
     var isCompleted: Bool = false
     var createdAt: Date = Date()
     var completedAt: Date?
+
+    var column: Column {
+        get { Column(rawValue: columnRaw) ?? .work }
+        set { columnRaw = newValue.rawValue }
+    }
 
     var priority: Priority {
         get { Priority(rawValue: priorityRaw) ?? .medium }
         set { priorityRaw = newValue.rawValue }
     }
 
-    init(title: String, taskDescription: String? = nil, category: Category? = nil,
-         priority: Priority = .medium, dueDate: Date? = nil) {
+    init(title: String, description: String? = nil, column: Column = .work,
+         priority: Priority = .medium, dueDate: Date? = nil, position: Int = 0) {
         self.id = UUID()
         self.title = title
-        self.taskDescription = taskDescription
-        self.category = category
+        self.taskDescription = description
+        self.columnRaw = column.rawValue
         self.priorityRaw = priority.rawValue
+        self.position = position
         self.dueDate = dueDate
         self.createdAt = Date()
     }
