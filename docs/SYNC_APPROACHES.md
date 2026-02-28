@@ -1,216 +1,351 @@
 # TaskFlow Sync Approaches
 
+## Assumptions
+
+- **No simultaneous writes** - User only edits on one Mac at a time
+- **Sequential workflow** - Edit on Mac A → sync → edit on Mac B → sync
+- This greatly simplifies sync - no conflict resolution needed!
+
 ## Current Problems
 
 1. **Deletes don't propagate** - When Mac A deletes a task, Mac B doesn't know
-2. **Data loss** - Race conditions cause items to disappear
-3. **No conflict resolution** - Last write wins blindly
-4. **File timestamps unreliable** - iCloud doesn't preserve them accurately
-
-## Root Cause
-
-The current approach has no way to distinguish between:
-- "This item was deleted" vs "This item doesn't exist yet"
-- "This is a newer version" vs "This is an older version"
+2. **Can't distinguish** "item was deleted" vs "item doesn't exist yet"
+3. **File timestamps unreliable** - iCloud doesn't preserve them accurately
 
 ---
 
 ## Approach 1: Manifest + Tombstones
 
-**Concept:** A single `manifest.json` file tracks what exists and what was deleted.
+**Concept:** A single `manifest.json` tracks what exists and what was deleted.
 
-**Files:**
+### Files Structure
 ```
 sync/
-  manifest.json      # Source of truth for what exists
+  manifest.json      # Source of truth
   tasks/
-    {uuid}.json      # Individual task data
+    {uuid}.json
   notes/
-    {uuid}.json      # Individual note data
+    {uuid}.json
 ```
 
-**manifest.json structure:**
+### manifest.json
 ```json
 {
-  "version": 42,
-  "lastModified": "2024-03-01T10:30:00Z",
-  "lastModifiedBy": "device-uuid-abc",
+  "lastSync": "2024-03-01T10:30:00Z",
   "items": {
-    "task-uuid-1": { "type": "task", "modifiedAt": "...", "hash": "abc123" },
-    "task-uuid-2": { "type": "task", "modifiedAt": "...", "hash": "def456" },
-    "note-uuid-1": { "type": "note", "modifiedAt": "...", "hash": "ghi789" }
+    "task-uuid-1": { "hash": "abc123" },
+    "task-uuid-2": { "hash": "def456" }
   },
-  "tombstones": {
-    "task-uuid-3": { "deletedAt": "2024-03-01T09:00:00Z", "deletedBy": "device-xyz" }
+  "deleted": {
+    "task-uuid-3": "2024-03-01T09:00:00Z"
   }
 }
 ```
 
-**Sync Algorithm:**
-1. Read remote manifest
-2. Compare with local state:
-   - Remote has item, local doesn't → **Pull it** (unless in local tombstones)
-   - Local has item, remote doesn't → **Check remote tombstones**
-     - In tombstones → Delete locally
-     - Not in tombstones → Push it
-   - Both have item → Compare `modifiedAt`, keep newer
-3. Merge tombstones (keep deletions for 7 days, then purge)
-4. Write updated manifest + push changed files
+### Example: Delete Propagation
 
-**Pros:**
-- Explicit delete tracking
-- Single source of truth
-- Content hashes detect changes reliably
+**Scenario:** You delete "Buy groceries" task on Mac A. Mac B should remove it too.
 
-**Cons:**
-- Manifest file itself can conflict (mitigate: version number + merge logic)
-- Requires atomic read-modify-write of manifest
+```
+BEFORE (both Macs):
+  manifest.json: { items: { "task-1": {...} } }
+  tasks/task-1.json: { title: "Buy groceries" }
 
-**Conflict Resolution:** If manifest versions diverge, merge them by comparing timestamps per-item.
+MAC A: User deletes task
+  1. Remove tasks/task-1.json
+  2. Update manifest.json:
+     {
+       items: {},
+       deleted: { "task-1": "2024-03-01T10:00:00Z" }
+     }
+  3. iCloud syncs files to cloud
+
+MAC B: App opens, pulls changes
+  1. Read manifest.json - sees task-1 in "deleted"
+  2. Local has task-1 → DELETE IT
+  3. Result: Task gone on Mac B too ✓
+```
+
+### Example: New Item Sync
+
+**Scenario:** You create "Call mom" task on Mac A. Mac B should get it.
+
+```
+MAC A: User creates task
+  1. Create tasks/task-2.json: { title: "Call mom" }
+  2. Update manifest.json:
+     { items: { "task-2": { hash: "xyz" } } }
+  3. iCloud syncs
+
+MAC B: App opens
+  1. Read manifest.json - sees task-2 in items
+  2. Local doesn't have task-2 → PULL IT
+  3. Check: task-2 not in local "deleted" list
+  4. Create local task from tasks/task-2.json ✓
+```
+
+### Pros/Cons
+- ✅ Explicit delete tracking
+- ✅ Single source of truth
+- ❌ Manifest file can get out of sync with actual files
 
 ---
 
 ## Approach 2: Operation Log (Event Sourcing)
 
-**Concept:** Don't sync state, sync operations. Each change is an immutable event.
+**Concept:** Record every action as an event. Replay events to build state.
 
-**Files:**
+### Files Structure
 ```
 sync/
   ops/
-    2024-03-01T10-30-00-device-abc.json  # Operation batch
-    2024-03-01T10-31-00-device-xyz.json  # Another batch
-  snapshot.json                           # Periodic state snapshot for fast load
+    001-2024-03-01T10-30-00.json
+    002-2024-03-01T10-35-00.json
 ```
 
-**Operation structure:**
+### Operation File
 ```json
 {
-  "deviceId": "device-abc",
-  "timestamp": "2024-03-01T10:30:00.123Z",
-  "operations": [
-    { "op": "create", "type": "task", "id": "uuid-1", "data": {...} },
-    { "op": "update", "type": "task", "id": "uuid-2", "data": {...} },
-    { "op": "delete", "type": "task", "id": "uuid-3" }
+  "timestamp": "2024-03-01T10:30:00Z",
+  "ops": [
+    { "action": "create", "type": "task", "id": "task-1", "data": {"title": "Buy groceries"} },
+    { "action": "update", "type": "task", "id": "task-2", "data": {"title": "Call mom (updated)"} },
+    { "action": "delete", "type": "task", "id": "task-3" }
   ]
 }
 ```
 
-**Sync Algorithm:**
-1. List all operation files
-2. Find ops newer than last processed timestamp
-3. Replay all operations in timestamp order:
-   - `create` → Insert if not exists
-   - `update` → Update if exists (compare timestamps for conflicts)
-   - `delete` → Remove item
-4. Write local changes as new operation file
-5. Periodically create snapshot for fast startup
+### Example: Delete Propagation
 
-**Pros:**
-- **No data loss** - operations are append-only, never deleted
-- Full history - can implement undo/redo
-- Deletes are explicit operations
-- Natural conflict handling - just replay in order
+**Scenario:** You delete "Buy groceries" task on Mac A.
 
-**Cons:**
-- Storage grows forever (need periodic compaction)
-- Rebuilding state from scratch is slow (mitigate with snapshots)
-- Clock skew between devices affects ordering
+```
+MAC A: User deletes task
+  1. Create new op file: 005-2024-03-01T14-00-00.json
+     { ops: [{ action: "delete", type: "task", id: "task-1" }] }
+  2. iCloud syncs op file
 
-**Conflict Resolution:** Operations are ordered by timestamp. If two devices edit same item at same time, later timestamp wins. Can add Lamport clocks for better ordering.
+MAC B: App opens
+  1. List all op files, find new one (005-...)
+  2. Read op: delete task-1
+  3. Execute: DELETE task-1 from local DB ✓
+```
+
+### Example: Full Replay
+
+**Scenario:** Mac B is brand new, needs all data.
+
+```
+Op files in cloud:
+  001: [create task-1 "Buy groceries"]
+  002: [create task-2 "Call mom"]
+  003: [update task-1 "Buy groceries today"]
+  004: [create note-1 "Shopping list"]
+  005: [delete task-1]
+
+MAC B: Fresh start, replay all
+  001 → Create task-1
+  002 → Create task-2
+  003 → Update task-1
+  004 → Create note-1
+  005 → Delete task-1
+
+Final state: task-2, note-1 (task-1 was created then deleted) ✓
+```
+
+### Pros/Cons
+- ✅ Complete history - can undo anything
+- ✅ Delete is explicit action
+- ✅ Never lose data - ops are append-only
+- ❌ Storage grows forever
+- ❌ Slow startup (must replay all ops)
 
 ---
 
-## Approach 3: Version Vectors + Soft Deletes
+## Approach 3: Version Vectors + Soft Deletes ⭐ RECOMMENDED
 
-**Concept:** Each item has a version number. Deleted items are kept as "tombstones" for 7 days.
+**Concept:** Each item has version number. "Delete" = mark as deleted, keep file for 7 days.
 
-**Files:**
+### Files Structure
 ```
 sync/
   tasks/
-    {uuid}.json      # Each file has version info embedded
+    task-1.json
+    task-2.json
+    task-3.json  ← deleted but kept as tombstone
   notes/
-    {uuid}.json
+    note-1.json
 ```
 
-**Item structure:**
+### Item Structure
 ```json
 {
-  "id": "uuid-1",
-  "version": 5,
-  "modifiedAt": "2024-03-01T10:30:00Z",
-  "modifiedBy": "device-abc",
+  "id": "task-1",
+  "version": 3,
   "isDeleted": false,
   "deletedAt": null,
   "data": {
-    "title": "My Task",
+    "title": "Buy groceries",
     "column": "work",
-    ...
+    "priority": 1
   }
 }
 ```
 
-**Sync Algorithm:**
-1. Scan all remote files
-2. For each remote item:
-   - Not in local → Create (unless `isDeleted`)
-   - In local → Compare versions:
-     - Remote version higher → Use remote
-     - Local version higher → Keep local, push later
-     - Same version, different data → Compare `modifiedAt`, keep newer, increment version
-3. For each local item not in remote:
-   - If local `modifiedAt` > last sync time → Push it (it's new)
-   - If local `modifiedAt` < last sync time → Deleted remotely, mark local as deleted
-4. Push all local items with changes
-5. Purge items where `isDeleted=true` and `deletedAt` > 7 days ago
+### Deleted Item (Tombstone)
+```json
+{
+  "id": "task-3",
+  "version": 5,
+  "isDeleted": true,
+  "deletedAt": "2024-03-01T10:00:00Z",
+  "data": null
+}
+```
 
-**Pros:**
-- Simple mental model
-- Version numbers prevent lost updates
-- Soft deletes give 7-day recovery window
-- Each item is self-contained (no central manifest)
+### Example: Delete Propagation
 
-**Cons:**
-- Version conflicts possible (mitigate with device ID in version)
-- More files to sync
-- Need to handle "deleted remotely but modified locally" case
+**Scenario:** You delete "Buy groceries" task on Mac A.
 
-**Conflict Resolution:** Higher version wins. If same version, later `modifiedAt` wins. If conflict detected, can prompt user.
+```
+BEFORE:
+  tasks/task-1.json: { id: "task-1", version: 3, isDeleted: false, data: {...} }
+
+MAC A: User deletes task
+  1. DON'T delete the file!
+  2. Update tasks/task-1.json:
+     { id: "task-1", version: 4, isDeleted: true, deletedAt: "2024-03-01T10:00:00Z", data: null }
+  3. iCloud syncs the updated file
+
+MAC B: App opens, scans files
+  1. Read tasks/task-1.json
+  2. See isDeleted: true
+  3. If local has task-1 → DELETE from local DB
+  4. Don't show deleted items in UI ✓
+```
+
+### Example: New Item Sync
+
+**Scenario:** Create "Call mom" on Mac A, sync to Mac B.
+
+```
+MAC A: User creates task
+  1. Create tasks/task-2.json:
+     { id: "task-2", version: 1, isDeleted: false, data: { title: "Call mom" } }
+  2. iCloud syncs
+
+MAC B: App opens
+  1. Scan sync/tasks/ folder
+  2. Find task-2.json (new file)
+  3. isDeleted: false → CREATE in local DB ✓
+```
+
+### Example: Edit Sync
+
+**Scenario:** Edit task title on Mac A, sync to Mac B.
+
+```
+BEFORE:
+  tasks/task-1.json: { version: 2, data: { title: "Buy groceries" } }
+
+MAC A: User edits title
+  1. Update tasks/task-1.json:
+     { version: 3, data: { title: "Buy groceries TODAY" } }
+  2. iCloud syncs
+
+MAC B: App opens
+  1. Read task-1.json → version 3
+  2. Local task-1 has version 2
+  3. Remote version higher → UPDATE local with remote data ✓
+```
+
+### Example: Accidental Recovery
+
+**Scenario:** You accidentally delete a task on Mac A, realize mistake within 7 days.
+
+```
+Day 1: Delete task on Mac A
+  tasks/task-1.json: { isDeleted: true, deletedAt: "2024-03-01" }
+
+Day 3: "Oh no, I need that task!"
+  Option A: Manually edit JSON file, set isDeleted: false
+  Option B: App could have "Recently Deleted" view (like Photos app)
+
+Day 8: Cleanup job runs
+  deletedAt is > 7 days ago → Actually delete file
+```
+
+### Sync Algorithm (Simple Version)
+
+```
+ON APP LAUNCH:
+  1. Scan all files in sync/tasks/ and sync/notes/
+
+  2. For each remote file:
+     - If isDeleted AND local has it → Delete local
+     - If isDeleted AND local doesn't have it → Skip
+     - If NOT deleted AND local doesn't have it → Create local
+     - If NOT deleted AND local has it:
+         - Remote version > local version → Update local
+         - Remote version <= local version → Keep local (push later)
+
+  3. For each local item not in remote:
+     - Create remote file with version: 1
+
+ON LOCAL CHANGE:
+  1. Increment version
+  2. Write to sync file
+
+ON LOCAL DELETE:
+  1. Set isDeleted: true, deletedAt: now
+  2. Increment version
+  3. Write to sync file (don't delete file!)
+```
+
+### Pros/Cons
+- ✅ Simple - builds on current approach
+- ✅ Soft deletes = 7-day safety net
+- ✅ No central manifest to conflict
+- ✅ Each file is self-contained
+- ❌ Deleted files take space for 7 days (minimal)
 
 ---
 
 ## Recommendation
 
-**For TaskFlow, I recommend Approach 3 (Version Vectors + Soft Deletes)** because:
+**Approach 3 (Version Vectors + Soft Deletes)** because:
 
-1. **Simplest to implement** - builds on current file-per-item approach
-2. **No central manifest** - avoids manifest conflicts
-3. **Soft deletes prevent data loss** - 7-day recovery window
-4. **Self-healing** - each item carries its own history
+1. **Simplest change** from current code
+2. **No simultaneous writes** means version comparison is trivial
+3. **Soft deletes prevent accidents** - 7 day recovery window
+4. **Self-healing** - each file carries its own truth
 
-**Implementation changes needed:**
-1. Add `version`, `modifiedBy`, `isDeleted`, `deletedAt` to SyncableTask/SyncableNote
-2. Generate unique device ID on first launch (store in UserDefaults)
-3. On delete: set `isDeleted=true` instead of removing file
-4. On sync: compare versions, not file timestamps
-5. Background job to purge old tombstones
+### Implementation Checklist
 
-**Estimated effort:** ~2-3 hours to implement
+```
+□ Add fields to SyncableTask/SyncableNote:
+  - version: Int (start at 1, increment on each save)
+  - isDeleted: Bool
+  - deletedAt: Date?
 
----
+□ Change delete behavior:
+  - Don't remove file
+  - Set isDeleted: true, increment version
 
-## Quick Comparison
+□ Change pull logic:
+  - Check isDeleted flag
+  - Compare versions, higher wins
 
-| Aspect | Manifest | Event Sourcing | Version Vectors |
-|--------|----------|----------------|-----------------|
-| Complexity | Medium | High | Low |
-| Delete handling | Explicit | Explicit | Soft delete |
-| Conflict resolution | Per-item timestamps | Replay order | Version comparison |
-| Storage overhead | Low | High (grows) | Medium |
-| Recovery from errors | Good | Excellent | Good |
-| Implementation effort | Medium | High | Low |
+□ Add cleanup job:
+  - On app launch, remove files where deletedAt > 7 days ago
+```
 
 ---
 
-Let me know which approach you'd like to implement tomorrow!
+## Questions for Tomorrow
+
+1. Do you want a "Recently Deleted" UI to recover items? Or just manual JSON editing?
+2. Should edits on Mac B while Mac A has unpushed changes show a warning?
+3. 7-day tombstone retention - good? Or longer/shorter?
+
+Sleep well! 🌙
