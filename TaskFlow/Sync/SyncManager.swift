@@ -163,7 +163,7 @@ class SyncManager: ObservableObject {
         }
     }
 
-    private func detectLocalAhead() -> Bool {
+    public func detectLocalAhead() -> Bool {
         return lastLocalChange != nil
     }
 
