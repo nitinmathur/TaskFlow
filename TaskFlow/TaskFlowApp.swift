@@ -5,7 +5,7 @@ import SQLite3
 @main
 struct TaskFlowApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([TodoTask.self, Category.self])
+        let schema = Schema([TodoTask.self, Note.self])
 
         // Store in iCloud Drive folder for sync (no entitlements needed)
         let home = FileManager.default.homeDirectoryForCurrentUser
@@ -49,20 +49,6 @@ struct TaskFlowApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .onAppear {
-                    DefaultDataSeeder.seedIfNeeded(context: sharedModelContainer.mainContext)
-                }
-        }
-        .modelContainer(sharedModelContainer)
-    }
-}
-
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .onAppear {
-                    DefaultDataSeeder.seedIfNeeded(context: sharedModelContainer.mainContext)
-                }
         }
         .modelContainer(sharedModelContainer)
     }
