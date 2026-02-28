@@ -15,6 +15,12 @@ enum Priority: Int, Codable, CaseIterable {
     }
 }
 
+struct ChecklistItem: Codable, Identifiable, Equatable {
+    var id: UUID = UUID()
+    var text: String
+    var isChecked: Bool = false
+}
+
 @Model
 final class TodoTask {
     var id: UUID = UUID()
@@ -27,6 +33,7 @@ final class TodoTask {
     var isCompleted: Bool = false
     var createdAt: Date = Date()
     var completedAt: Date?
+    var checklistData: Data?
 
     var column: Column {
         get { Column(rawValue: columnRaw) ?? .work }
@@ -36,6 +43,16 @@ final class TodoTask {
     var priority: Priority {
         get { Priority(rawValue: priorityRaw) ?? .medium }
         set { priorityRaw = newValue.rawValue }
+    }
+
+    var checklist: [ChecklistItem] {
+        get {
+            guard let data = checklistData else { return [] }
+            return (try? JSONDecoder().decode([ChecklistItem].self, from: data)) ?? []
+        }
+        set {
+            checklistData = try? JSONEncoder().encode(newValue)
+        }
     }
 
     init(title: String, description: String? = nil, column: Column = .work,

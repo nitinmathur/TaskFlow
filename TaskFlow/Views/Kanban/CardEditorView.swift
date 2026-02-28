@@ -12,49 +12,167 @@ struct CardEditorView: View {
     @State private var priority: Priority = .medium
     @State private var hasDueDate = false
     @State private var dueDate = Date()
+    @State private var checklist: [ChecklistItem] = []
+    @State private var newItemText = ""
     private var isEditing: Bool { task != nil }
 
     var body: some View {
         VStack(spacing: 0) {
+            // Header
             HStack {
                 Text(isEditing ? "Edit Card" : "New Card").font(.headline)
                 Spacer()
-                Button { dismiss() } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }.buttonStyle(.plain)
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                }.buttonStyle(.plain)
             }.padding()
+
             Divider()
-            Form {
-                TextField("Title", text: $title)
-                TextField("Description", text: $desc, axis: .vertical).lineLimit(3...5)
-                Picker("Column", selection: $column) { ForEach(Column.allCases, id: \.self) { Text($0.title) } }
-                Picker("Priority", selection: $priority) { ForEach(Priority.allCases, id: \.self) { Text($0.label) } }
-                Toggle("Due Date", isOn: $hasDueDate)
-                if hasDueDate { DatePicker("Date", selection: $dueDate, displayedComponents: .date) }
-            }.formStyle(.grouped)
+
+            // Form
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Basic fields
+                    GroupBox("Details") {
+                        VStack(spacing: 12) {
+                            TextField("Title", text: $title)
+                                .textFieldStyle(.plain)
+                            Divider()
+                            TextField("Description", text: $desc, axis: .vertical)
+                                .lineLimit(2...4)
+                                .textFieldStyle(.plain)
+                        }
+                        .padding(8)
+                    }
+
+                    // Settings
+                    GroupBox("Settings") {
+                        VStack(spacing: 8) {
+                            HStack {
+                                Text("Column")
+                                Spacer()
+                                Picker("", selection: $column) {
+                                    ForEach(Column.allCases, id: \.self) { Text($0.title) }
+                                }.labelsHidden().frame(width: 120)
+                            }
+                            Divider()
+                            HStack {
+                                Text("Priority")
+                                Spacer()
+                                Picker("", selection: $priority) {
+                                    ForEach(Priority.allCases, id: \.self) { Text($0.label) }
+                                }.labelsHidden().frame(width: 120)
+                            }
+                            Divider()
+                            Toggle("Due Date", isOn: $hasDueDate)
+                            if hasDueDate {
+                                DatePicker("", selection: $dueDate, displayedComponents: .date)
+                                    .labelsHidden()
+                            }
+                        }
+                        .padding(8)
+                    }
+
+                    // Checklist
+                    GroupBox {
+                        VStack(alignment: .leading, spacing: 8) {
+                            // Existing items
+                            ForEach($checklist) { $item in
+                                HStack {
+                                    Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
+                                        .foregroundStyle(item.isChecked ? .green : .secondary)
+                                    TextField("Item", text: $item.text)
+                                        .textFieldStyle(.plain)
+                                    Button {
+                                        checklist.removeAll { $0.id == item.id }
+                                    } label: {
+                                        Image(systemName: "xmark")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+
+                            // Add new item
+                            HStack {
+                                Image(systemName: "plus.circle")
+                                    .foregroundStyle(.blue)
+                                TextField("Add item...", text: $newItemText)
+                                    .textFieldStyle(.plain)
+                                    .onSubmit { addItem() }
+                                if !newItemText.isEmpty {
+                                    Button("Add") { addItem() }
+                                        .buttonStyle(.bordered)
+                                        .controlSize(.small)
+                                }
+                            }
+                        }
+                        .padding(8)
+                    } label: {
+                        Label("Checklist", systemImage: "checklist")
+                    }
+                }
+                .padding()
+            }
+
             Divider()
+
+            // Actions
             HStack {
-                if isEditing { Button("Delete", role: .destructive) { if let task { context.delete(task) }; dismiss() } }
+                if isEditing {
+                    Button("Delete", role: .destructive) {
+                        if let task { context.delete(task) }
+                        dismiss()
+                    }
+                }
                 Spacer()
                 Button("Cancel") { dismiss() }
-                Button(isEditing ? "Save" : "Add") { save() }.buttonStyle(.borderedProminent).disabled(title.isEmpty)
+                Button(isEditing ? "Save" : "Add") { save() }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(title.isEmpty)
             }.padding()
         }
-        .frame(width: 400, height: 400)
+        .frame(width: 420, height: 520)
         .onAppear { loadTask() }
+    }
+
+    private func addItem() {
+        guard !newItemText.isEmpty else { return }
+        checklist.append(ChecklistItem(text: newItemText))
+        newItemText = ""
     }
 
     private func loadTask() {
         column = defaultColumn
         guard let task else { return }
-        title = task.title; desc = task.taskDescription ?? ""; column = task.column
-        priority = task.priority; hasDueDate = task.dueDate != nil; dueDate = task.dueDate ?? Date()
+        title = task.title
+        desc = task.taskDescription ?? ""
+        column = task.column
+        priority = task.priority
+        hasDueDate = task.dueDate != nil
+        dueDate = task.dueDate ?? Date()
+        checklist = task.checklist
     }
 
     private func save() {
         if let task {
-            task.title = title; task.taskDescription = desc.isEmpty ? nil : desc
-            task.column = column; task.priority = priority; task.dueDate = hasDueDate ? dueDate : nil
+            task.title = title
+            task.taskDescription = desc.isEmpty ? nil : desc
+            task.column = column
+            task.priority = priority
+            task.dueDate = hasDueDate ? dueDate : nil
+            task.checklist = checklist
         } else {
-            context.insert(TodoTask(title: title, description: desc.isEmpty ? nil : desc, column: column, priority: priority, dueDate: hasDueDate ? dueDate : nil))
+            let newTask = TodoTask(
+                title: title,
+                description: desc.isEmpty ? nil : desc,
+                column: column,
+                priority: priority,
+                dueDate: hasDueDate ? dueDate : nil
+            )
+            newTask.checklist = checklist
+            context.insert(newTask)
         }
         dismiss()
     }

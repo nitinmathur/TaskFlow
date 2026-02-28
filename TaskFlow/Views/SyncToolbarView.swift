@@ -46,3 +46,4 @@ struct SyncToolbarView: View {
         }
     }
 }
+

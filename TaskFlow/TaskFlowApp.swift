@@ -49,7 +49,9 @@ struct TaskFlowApp: App {
     var body: some Scene {
         WindowGroup {
             MainTabView()
+                .frame(minWidth: 1100, minHeight: 600)
         }
         .modelContainer(sharedModelContainer)
+        .defaultSize(width: 1200, height: 700)
     }
 }

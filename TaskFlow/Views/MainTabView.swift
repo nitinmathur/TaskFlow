@@ -11,6 +11,9 @@ struct MainTabView: View {
     @Query private var notes: [Note]
     @State private var selectedTab: AppTab = .tasks
     @StateObject private var syncManager = SyncManager()
+    @State private var lastKnownTasksHash: Int = 0
+    @State private var lastKnownNotesHash: Int = 0
+    @State private var changeTrackingTimer: Timer?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -37,7 +40,19 @@ struct MainTabView: View {
             }
         }
         .frame(minWidth: 900, minHeight: 500)
-        .onAppear { syncManager.checkForRemoteChanges() }
+        .onAppear {
+            syncManager.checkForRemoteChanges()
+            startChangeTracking()
+        }
+        .onDisappear {
+            changeTrackingTimer?.invalidate()
+        }
+        .onChange(of: tasks.count) { _, _ in
+            syncManager.markLocalChange()
+        }
+        .onChange(of: notes.count) { _, _ in
+            syncManager.markLocalChange()
+        }
         .onChange(of: syncManager.status) { _, newStatus in
             if newStatus == .syncing {
                 if syncManager.detectLocalAhead() {
@@ -50,6 +65,57 @@ struct MainTabView: View {
                 print("Sync conflict detected - manual intervention required")
             }
         }
+    }
+
+    private func startChangeTracking() {
+        // Initialize hash values
+        lastKnownTasksHash = computeTasksHash()
+        lastKnownNotesHash = computeNotesHash()
+
+        // Check for changes every 5 seconds
+        let timer = Timer(timeInterval: 5.0, repeats: true) { [self] _ in
+            checkForLocalChanges()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        changeTrackingTimer = timer
+    }
+
+    private func checkForLocalChanges() {
+        let currentTasksHash = computeTasksHash()
+        let currentNotesHash = computeNotesHash()
+
+        if currentTasksHash != lastKnownTasksHash || currentNotesHash != lastKnownNotesHash {
+            lastKnownTasksHash = currentTasksHash
+            lastKnownNotesHash = currentNotesHash
+            syncManager.markLocalChange()
+        }
+    }
+
+    private func computeTasksHash() -> Int {
+        var hasher = Hasher()
+        for task in tasks {
+            hasher.combine(task.id)
+            hasher.combine(task.title)
+            hasher.combine(task.taskDescription)
+            hasher.combine(task.column.rawValue)
+            hasher.combine(task.priority.rawValue)
+            hasher.combine(task.position)
+            hasher.combine(task.isCompleted)
+            hasher.combine(task.checklist.count)
+        }
+        return hasher.finalize()
+    }
+
+    private func computeNotesHash() -> Int {
+        var hasher = Hasher()
+        for note in notes {
+            hasher.combine(note.id)
+            hasher.combine(note.title)
+            hasher.combine(note.body)
+            hasher.combine(note.position)
+            hasher.combine(note.folderName)
+        }
+        return hasher.finalize()
     }
 
     private func pushChanges() {

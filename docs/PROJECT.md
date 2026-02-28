@@ -1,138 +1,226 @@
 # TaskFlow Project Documentation
 
 **Last Updated:** 2026-02-28
-**Status:** MVP Complete, In Active Use
+**Status:** v2.0 - Kanban Redesign Complete
 
-## What We Built
+## Overview
 
-TaskFlow is a native macOS TODO app for developers with iCloud Drive sync between Macs.
+TaskFlow is a native macOS Kanban-style task manager with Notes, built with SwiftUI and SwiftData. Syncs across Macs via iCloud Drive without requiring a paid Apple Developer account.
 
-### Current Features
+## Current Features (v2.0)
 
-- **Task Management**: Create, edit, complete, delete tasks
-- **Categories**: Work and Personal (customizable)
-- **Priority Levels**: High (red), Medium (orange), Low (blue)
-- **Due Dates**: Optional, with visual indicators for today/overdue
-- **Sorting**: By recency (default), priority, or due date
-- **Grouping**: None, by category, or by date created
-- **Logbook**: Completed tasks grouped by completion date (Today, Yesterday, This Week, etc.)
-- **Timestamps**: Shows when tasks were created (e.g., "2h ago")
-- **iCloud Sync**: Data stored in `~/Library/Mobile Documents/com~apple~CloudDocs/TaskFlow/`
+### Kanban Board
+| Feature | Description |
+|---------|-------------|
+| 4 Columns | Work, Personal, Ideas, Completed |
+| Drag & Drop | Move cards between columns |
+| Priority | High (red), Medium (orange), Low (blue) borders |
+| Due Dates | Visual indicators for overdue/today |
+| Checklists | Sub-items per card with progress bar |
+| Sorting | Manual, Priority, Date Created, Due Date |
+| Grouping | Optional by creation date |
+| Reorder | Up/down arrows in Manual mode |
 
-### Tech Stack
+### Notes
+| Feature | Description |
+|---------|-------------|
+| Markdown | Bold, italic, code, links, lists, checkboxes, quotes |
+| Toolbar | Quick-insert formatting buttons |
+| Preview/Edit | Toggle between rendered and raw views |
+| Sorting | Manual, Last Updated, Date Created, Title |
+| Auto-save | Debounced saves on edit |
+
+### Sync
+- iCloud Drive folder: `~/Library/Mobile Documents/com~apple~CloudDocs/TaskFlow/`
+- SQLite with DELETE journal mode (WAL disabled for sync compatibility)
+- No CloudKit/paid developer account required
+
+## Tech Stack
 
 | Component | Technology |
 |-----------|------------|
-| UI | SwiftUI |
-| Data | SwiftData (SQLite) |
-| Sync | iCloud Drive folder (no CloudKit) |
+| UI Framework | SwiftUI |
+| Persistence | SwiftData (SQLite) |
+| Sync | iCloud Drive folder |
+| Build Tool | XcodeGen |
 | Target | macOS 14.0+ (Sonoma) |
-| Build Tool | xcodegen |
+| Swift | 5.9+ |
+
+## Architecture
+
+### Data Models
+
+**TodoTask**
+```swift
+@Model class TodoTask {
+    var id: UUID
+    var title: String
+    var taskDescription: String?
+    var columnRaw: String        // Column enum raw value
+    var priorityRaw: Int         // Priority enum raw value
+    var position: Int            // Manual ordering
+    var dueDate: Date?
+    var isCompleted: Bool
+    var createdAt: Date
+    var completedAt: Date?
+    var checklistData: Data?     // JSON-encoded [ChecklistItem]
+}
+```
+
+**Note**
+```swift
+@Model class Note {
+    var id: UUID
+    var title: String
+    var body: String             // Markdown content
+    var position: Int            // Manual ordering
+    var createdAt: Date
+    var updatedAt: Date
+}
+```
+
+**ChecklistItem** (Codable, stored as JSON)
+```swift
+struct ChecklistItem: Codable, Identifiable {
+    var id: UUID
+    var text: String
+    var isChecked: Bool
+}
+```
 
 ### Project Structure
 
 ```
 TaskFlow/
-├── project.yml              # xcodegen config
-├── README.md                # Setup instructions
+├── project.yml                    # XcodeGen configuration
+├── README.md                      # Setup instructions
 ├── docs/
-│   ├── PROJECT.md           # This file
+│   ├── PROJECT.md                 # This file
 │   └── plans/
-│       └── 2026-02-28-taskflow-design.md  # Original design doc
+│       └── 2026-02-28-kanban-redesign.md
 └── TaskFlow/
-    ├── TaskFlowApp.swift    # App entry, SwiftData container
-    ├── TaskFlow.entitlements
+    ├── TaskFlowApp.swift          # Entry point, SwiftData container
     ├── Models/
-    │   ├── TodoTask.swift   # Task model with priority enum
-    │   └── Category.swift   # Category model
-    ├── Views/
-    │   ├── ContentView.swift       # Main split view
-    │   ├── SidebarView.swift       # Navigation sidebar
-    │   ├── TaskListView.swift      # Task list with sort/group
-    │   ├── TaskRowView.swift       # Individual task row
-    │   ├── TaskEditorView.swift    # Add/edit task sheet
-    │   └── CategoryManagerView.swift # Manage categories
-    └── Utilities/
-        └── DefaultDataSeeder.swift  # Seeds Work/Personal categories
+    │   ├── Column.swift           # work, personal, ideas, completed
+    │   ├── TodoTask.swift         # Task + ChecklistItem
+    │   └── Note.swift             # Note model
+    └── Views/
+        ├── MainTabView.swift      # Tab container (Tasks/Notes)
+        ├── Kanban/
+        │   ├── KanbanBoardView.swift    # Board with 4 columns
+        │   ├── KanbanColumnView.swift   # Single column + drop target
+        │   ├── KanbanCardView.swift     # Card with priority border
+        │   ├── CardDetailView.swift     # Read-only preview + checklist
+        │   └── CardEditorView.swift     # Create/edit form
+        └── Notes/
+            ├── NotesSplitView.swift     # Split view + list
+            ├── NoteEditorView.swift     # Edit/preview toggle
+            ├── MarkdownComponents.swift # Toolbar + NSTextView
+            └── MarkdownRenderer.swift   # Markdown → AttributedString
 ```
 
-### Key Implementation Details
+## Key Implementation Details
 
-1. **No paid Apple Developer account needed** - Uses iCloud Drive folder sync instead of CloudKit
-2. **Data location**: `~/Library/Mobile Documents/com~apple~CloudDocs/TaskFlow/TaskFlow.store`
-3. **Fallback**: If iCloud Drive unavailable, stores in `~/Documents/TaskFlow/`
-4. **Default categories**: Work and Personal (can add/delete any)
-5. **Sort default**: Recency (newest first)
+### iCloud Sync Without CloudKit
+```swift
+// Store in iCloud Drive folder (no entitlements needed)
+let iCloudDrive = home.appendingPathComponent(
+    "Library/Mobile Documents/com~apple~CloudDocs/TaskFlow"
+)
+
+// Disable WAL mode for iCloud compatibility
+sqlite3_exec(db, "PRAGMA journal_mode=DELETE;", nil, nil, nil)
+```
+
+### Checklist as JSON
+```swift
+var checklist: [ChecklistItem] {
+    get {
+        guard let data = checklistData else { return [] }
+        return (try? JSONDecoder().decode([ChecklistItem].self, from: data)) ?? []
+    }
+    set {
+        checklistData = try? JSONEncoder().encode(newValue)
+    }
+}
+```
+
+### Markdown Rendering
+- Uses `AttributedString` with regex pattern matching
+- Supports: `**bold**`, `_italic_`, `` `code` ``, `[link](url)`, `~~strike~~`
+- Block elements: headings, lists, checkboxes, quotes, code blocks
+
+### Manual Ordering
+- `position` field on both TodoTask and Note
+- Swap positions when reordering via up/down buttons
+- New items get `maxPosition + 1`
+
+## Build & Run
+
+```bash
+# Generate Xcode project
+cd /path/to/TaskFlow
+xcodegen generate
+
+# Open and build
+open TaskFlow.xcodeproj
+# Cmd+R in Xcode
+```
+
+## Data Location
+
+```bash
+# Database file
+~/Library/Mobile Documents/com~apple~CloudDocs/TaskFlow/TaskFlow.store
+
+# Fallback (if iCloud unavailable)
+~/Documents/TaskFlow/TaskFlow.store
+```
 
 ---
 
-## North Star / Future Features
+## Future Enhancements
 
-### Priority 1: Telegram Bot Integration
-**Status:** Planned
+### Priority 1: Telegram Bot
+- Local Python bot for mobile task capture
+- Commands: `/add`, `/list`, `/done`, `/today`
+- Shares data via JSON in iCloud Drive
 
-Allow creating and reading todos via Telegram bot.
-
-**Proposed approach (Option A - Local Bot):**
-1. Python script running on Mac
-2. Uses python-telegram-bot library
-3. Shares data via JSON file in iCloud Drive folder
-4. Commands: `/add <task>`, `/list`, `/done <id>`, `/today`
-
-**Implementation notes:**
-- Bot token via BotFather
-- Script runs as launchd daemon or manual background process
-- App needs to read from shared JSON or bot writes directly to SQLite
-
-**Alternative approaches considered:**
-- Option B: Cloud-hosted bot with Firebase (always-on, more complex)
-- Option C: Inbox file that app imports on launch (simpler)
-
-### Priority 2: Potential Enhancements
-- Keyboard shortcuts (Cmd+N for new task, etc.)
-- Quick add from menu bar
-- Notifications/reminders for due dates
-- Search/filter tasks
-- Task notes/subtasks
-- Archive vs delete distinction
+### Priority 2: Nice to Have
+- [ ] Keyboard shortcuts (Cmd+N, etc.)
+- [ ] Menu bar quick add
+- [ ] Due date notifications
+- [ ] Search/filter
+- [ ] Tags/labels
+- [ ] Export to Markdown
+- [ ] Archive vs delete
 
 ---
 
-## Session Continuity Notes
+## Session Continuity
 
-### For Next Claude Session
-
-**Context:**
-- User is a developer who uses this for daily todos
-- Prefers simple, clean solutions over complex ones
+### Context for Future Sessions
+- User is a developer using this for daily task management
 - Has 2 Macs syncing via iCloud Drive
-- Wants Telegram integration for mobile access
+- Prefers simple, clean solutions
+- Kanban redesign completed 2026-02-28
 
-**Current state:**
-- App is functional and in use
-- Categories reduced to Work/Personal
-- Sorting by recency, grouping by date working
+### Current State
+- All features working
+- Manual ordering for tasks and notes
+- Checklist with toggle in preview
+- Markdown notes with preview/edit modes
 - No known bugs
 
-**To continue Telegram bot work:**
-1. Ask user if they have a Telegram bot token
-2. Recommend Option A (local Python bot)
-3. Create `TaskFlow/bot/` directory with:
-   - `bot.py` - Main bot script
-   - `requirements.txt` - python-telegram-bot
-   - `README.md` - Setup instructions
-4. Decide on data sharing: JSON file vs direct SQLite access
-5. Consider launchd plist for auto-start
-
-**Build commands:**
+### Quick Commands
 ```bash
+# Build
 cd /Users/nmathur/Documents/personal-projects/TaskFlow
-xcodegen generate
-open TaskFlow.xcodeproj
-# Then Cmd+R in Xcode
-```
+xcodegen generate && open TaskFlow.xcodeproj
 
-**Data location for debugging:**
-```bash
+# Check data
 ls -la ~/Library/Mobile\ Documents/com~apple~CloudDocs/TaskFlow/
+
+# Reset data (if needed)
+rm -rf ~/Library/Mobile\ Documents/com~apple~CloudDocs/TaskFlow/
 ```
