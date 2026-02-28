@@ -3,38 +3,49 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		041FDFE99DCD9B6D679A5D9F /* DefaultDataSeeder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FFF456CA79CF8F3FAF23648 /* DefaultDataSeeder.swift */; };
-		0C6AB58462445A88EB722FBF /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953696381CEF2EA1D934A35D /* SidebarView.swift */; };
-		2BF92514BB81B4584588EAEF /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4BFE9A1B5C637F8A0F29604 /* Category.swift */; };
-		2CAE28C808BCE3BCD537C945 /* TaskListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 568512640682C528AC354C67 /* TaskListView.swift */; };
-		67C1F68617B396D18D9419E0 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9119CB3A7C4A61285F5B7608 /* ContentView.swift */; };
-		73580595781745FB4DEB6AD7 /* CategoryManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8FEFAE1BB2070DD9FF9C001 /* CategoryManagerView.swift */; };
-		89692107A7035C348ADFEAA8 /* TaskRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F7FC8BBF0969B8CC0CF9E8B /* TaskRowView.swift */; };
-		B60A56CE7B411323440F9B8C /* TaskEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D4ACE8AEAB15AA3673EC671 /* TaskEditorView.swift */; };
+		043609B05E17CCE203317A19 /* CardEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 417C409E6EF3154E39C515C1 /* CardEditorView.swift */; };
+		52E58AE6B8E842B3004A0AA4 /* NoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5411D2FAA8D5370CAF20C6D /* NoteEditorView.swift */; };
+		54FB6D4B4502B4BE430F4929 /* Column.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36E4FC1F06B7956AD415A721 /* Column.swift */; };
+		9F3853A47327A81BE1A7A32C /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D10ACFA780286105CD15B016 /* MainTabView.swift */; };
+		B653B9C0B5D7BB364FED9CA6 /* NotesSplitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBC75546B3AFBA88E75B6734 /* NotesSplitView.swift */; };
 		BFB1E9A9AFFD66A1C30065D0 /* TaskFlowApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E89599E8AEAD431D6B3745B8 /* TaskFlowApp.swift */; };
+		C30CC172D97CDD6ACB48D4D1 /* KanbanBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFA18650967175E6497E7065 /* KanbanBoardView.swift */; };
 		C4AFFED9B56837B06B46BD9B /* TodoTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183E4E86AE12FC7E8D054CF7 /* TodoTask.swift */; };
+		D7C1FC73BE6C061A77237B0B /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6787EA1FC86B99BF59F1068 /* Note.swift */; };
+		E174E6E4C8CCF587D7576212 /* KanbanCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F201481474E2100B187F355 /* KanbanCardView.swift */; };
+		F4CDAFEB2D27416B7003EAC3 /* KanbanColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A42D93EA3A5811C081F459C /* KanbanColumnView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		09AE62E98FA111629360AB0D /* TaskFlow.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TaskFlow.entitlements; sourceTree = "<group>"; };
+		0A42D93EA3A5811C081F459C /* KanbanColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KanbanColumnView.swift; sourceTree = "<group>"; };
+		0F201481474E2100B187F355 /* KanbanCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KanbanCardView.swift; sourceTree = "<group>"; };
 		183E4E86AE12FC7E8D054CF7 /* TodoTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoTask.swift; sourceTree = "<group>"; };
-		3FFF456CA79CF8F3FAF23648 /* DefaultDataSeeder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultDataSeeder.swift; sourceTree = "<group>"; };
-		568512640682C528AC354C67 /* TaskListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListView.swift; sourceTree = "<group>"; };
-		5F7FC8BBF0969B8CC0CF9E8B /* TaskRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskRowView.swift; sourceTree = "<group>"; };
-		6D4ACE8AEAB15AA3673EC671 /* TaskEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskEditorView.swift; sourceTree = "<group>"; };
-		9119CB3A7C4A61285F5B7608 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		953696381CEF2EA1D934A35D /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
-		B8FEFAE1BB2070DD9FF9C001 /* CategoryManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryManagerView.swift; sourceTree = "<group>"; };
-		D4BFE9A1B5C637F8A0F29604 /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
+		36E4FC1F06B7956AD415A721 /* Column.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Column.swift; sourceTree = "<group>"; };
+		417C409E6EF3154E39C515C1 /* CardEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardEditorView.swift; sourceTree = "<group>"; };
+		BBC75546B3AFBA88E75B6734 /* NotesSplitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesSplitView.swift; sourceTree = "<group>"; };
+		BFA18650967175E6497E7065 /* KanbanBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KanbanBoardView.swift; sourceTree = "<group>"; };
+		D10ACFA780286105CD15B016 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		D5411D2FAA8D5370CAF20C6D /* NoteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEditorView.swift; sourceTree = "<group>"; };
 		E6FF2BD4A15C028AD24D7738 /* TaskFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TaskFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E89599E8AEAD431D6B3745B8 /* TaskFlowApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFlowApp.swift; sourceTree = "<group>"; };
+		F6787EA1FC86B99BF59F1068 /* Note.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Note.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		18417A05AFCC69AFF9DCEF7D /* Notes */ = {
+			isa = PBXGroup;
+			children = (
+				D5411D2FAA8D5370CAF20C6D /* NoteEditorView.swift */,
+				BBC75546B3AFBA88E75B6734 /* NotesSplitView.swift */,
+			);
+			path = Notes;
+			sourceTree = "<group>";
+		};
 		207E24C944C19F44134D97F7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -49,7 +60,6 @@
 				09AE62E98FA111629360AB0D /* TaskFlow.entitlements */,
 				E89599E8AEAD431D6B3745B8 /* TaskFlowApp.swift */,
 				5A70153EA0B07D525EC993FE /* Models */,
-				61BC51FB35C4E86FD090C39A /* Utilities */,
 				8D5D3B6803DBB4801307D62D /* Views */,
 			);
 			path = TaskFlow;
@@ -58,31 +68,32 @@
 		5A70153EA0B07D525EC993FE /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				D4BFE9A1B5C637F8A0F29604 /* Category.swift */,
+				36E4FC1F06B7956AD415A721 /* Column.swift */,
+				F6787EA1FC86B99BF59F1068 /* Note.swift */,
 				183E4E86AE12FC7E8D054CF7 /* TodoTask.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
 		};
-		61BC51FB35C4E86FD090C39A /* Utilities */ = {
-			isa = PBXGroup;
-			children = (
-				3FFF456CA79CF8F3FAF23648 /* DefaultDataSeeder.swift */,
-			);
-			path = Utilities;
-			sourceTree = "<group>";
-		};
 		8D5D3B6803DBB4801307D62D /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				B8FEFAE1BB2070DD9FF9C001 /* CategoryManagerView.swift */,
-				9119CB3A7C4A61285F5B7608 /* ContentView.swift */,
-				953696381CEF2EA1D934A35D /* SidebarView.swift */,
-				6D4ACE8AEAB15AA3673EC671 /* TaskEditorView.swift */,
-				568512640682C528AC354C67 /* TaskListView.swift */,
-				5F7FC8BBF0969B8CC0CF9E8B /* TaskRowView.swift */,
+				D10ACFA780286105CD15B016 /* MainTabView.swift */,
+				BB84C5C0DF32549F09057C06 /* Kanban */,
+				18417A05AFCC69AFF9DCEF7D /* Notes */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		BB84C5C0DF32549F09057C06 /* Kanban */ = {
+			isa = PBXGroup;
+			children = (
+				417C409E6EF3154E39C515C1 /* CardEditorView.swift */,
+				BFA18650967175E6497E7065 /* KanbanBoardView.swift */,
+				0F201481474E2100B187F355 /* KanbanCardView.swift */,
+				0A42D93EA3A5811C081F459C /* KanbanColumnView.swift */,
+			);
+			path = Kanban;
 			sourceTree = "<group>";
 		};
 		EA5549F0888D0EB8D063E2AB = {
@@ -123,6 +134,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					8EB882D1DD71FB7B601277B7 = {
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -137,6 +149,7 @@
 			);
 			mainGroup = EA5549F0888D0EB8D063E2AB;
 			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -150,15 +163,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2BF92514BB81B4584588EAEF /* Category.swift in Sources */,
-				73580595781745FB4DEB6AD7 /* CategoryManagerView.swift in Sources */,
-				67C1F68617B396D18D9419E0 /* ContentView.swift in Sources */,
-				041FDFE99DCD9B6D679A5D9F /* DefaultDataSeeder.swift in Sources */,
-				0C6AB58462445A88EB722FBF /* SidebarView.swift in Sources */,
-				B60A56CE7B411323440F9B8C /* TaskEditorView.swift in Sources */,
+				043609B05E17CCE203317A19 /* CardEditorView.swift in Sources */,
+				54FB6D4B4502B4BE430F4929 /* Column.swift in Sources */,
+				C30CC172D97CDD6ACB48D4D1 /* KanbanBoardView.swift in Sources */,
+				E174E6E4C8CCF587D7576212 /* KanbanCardView.swift in Sources */,
+				F4CDAFEB2D27416B7003EAC3 /* KanbanColumnView.swift in Sources */,
+				9F3853A47327A81BE1A7A32C /* MainTabView.swift in Sources */,
+				D7C1FC73BE6C061A77237B0B /* Note.swift in Sources */,
+				52E58AE6B8E842B3004A0AA4 /* NoteEditorView.swift in Sources */,
+				B653B9C0B5D7BB364FED9CA6 /* NotesSplitView.swift in Sources */,
 				BFB1E9A9AFFD66A1C30065D0 /* TaskFlowApp.swift in Sources */,
-				2CAE28C808BCE3BCD537C945 /* TaskListView.swift in Sources */,
-				89692107A7035C348ADFEAA8 /* TaskRowView.swift in Sources */,
 				C4AFFED9B56837B06B46BD9B /* TodoTask.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -172,7 +186,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = MU5255SHG3;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -191,7 +205,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEVELOPMENT_TEAM = MU5255SHG3;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
