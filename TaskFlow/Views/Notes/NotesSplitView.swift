@@ -116,6 +116,7 @@ struct NotesSplitView: View {
                 selectedNote: $selectedNote,
                 sortOption: $sortOption,
                 selectedFolder: selectedFolder,
+                availableFolders: folders,
                 onAdd: addNote,
                 onReorder: reorderNote
             )
@@ -178,6 +179,7 @@ struct NotesListView: View {
     @Binding var selectedNote: Note?
     @Binding var sortOption: NoteSortOption
     let selectedFolder: String
+    let availableFolders: [String]
     let onAdd: () -> Void
     let onReorder: (Note, Int) -> Void
     @Environment(\.modelContext) private var context
@@ -284,6 +286,23 @@ struct NotesListView: View {
                         .padding(.vertical, 2)
                         .tag(note)
                         .contextMenu {
+                            // Move to Folder submenu
+                            Menu("Move to Folder") {
+                                ForEach(availableFolders.filter { $0 != "All Notes" && $0 != note.folderName }, id: \.self) { folder in
+                                    Button(folder) {
+                                        note.folderName = folder
+                                    }
+                                }
+                                if note.folderName != "All Notes" {
+                                    Divider()
+                                    Button("Remove from Folder") {
+                                        note.folderName = "All Notes"
+                                    }
+                                }
+                            }
+
+                            Divider()
+
                             if sortOption == .manual {
                                 Button("Move to Top") {
                                     moveToTop(note)

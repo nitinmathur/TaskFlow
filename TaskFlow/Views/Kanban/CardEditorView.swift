@@ -4,6 +4,7 @@ import SwiftData
 struct CardEditorView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Query private var allTasks: [TodoTask]
     let task: TodoTask?
     let defaultColumn: Column
     @State private var title = ""
@@ -164,12 +165,17 @@ struct CardEditorView: View {
             task.dueDate = hasDueDate ? dueDate : nil
             task.checklist = checklist
         } else {
+            // Calculate position for new task
+            let columnTasks = allTasks.filter { $0.column == column }
+            let maxPosition = columnTasks.map(\.position).max() ?? -1
+
             let newTask = TodoTask(
                 title: title,
                 description: desc.isEmpty ? nil : desc,
                 column: column,
                 priority: priority,
-                dueDate: hasDueDate ? dueDate : nil
+                dueDate: hasDueDate ? dueDate : nil,
+                position: maxPosition + 1
             )
             newTask.checklist = checklist
             context.insert(newTask)

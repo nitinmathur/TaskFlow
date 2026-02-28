@@ -8,14 +8,23 @@ enum SortOption: String, CaseIterable {
     case dueDate = "Due Date"
 }
 
+// Helper for sheet presentation
+struct CardEditorConfig: Identifiable {
+    let id = UUID()
+    let task: TodoTask?
+    let column: Column
+}
+
+struct CardDetailConfig: Identifiable {
+    let id = UUID()
+    let task: TodoTask
+}
+
 struct KanbanBoardView: View {
     @Query private var tasks: [TodoTask]
     @Environment(\.modelContext) private var context
-    @State private var showCardEditor = false
-    @State private var showCardDetail = false
-    @State private var editingTask: TodoTask?
-    @State private var viewingTask: TodoTask?
-    @State private var newCardColumn: Column?
+    @State private var editorConfig: CardEditorConfig?
+    @State private var detailConfig: CardDetailConfig?
     @State private var groupByDate = false
     @State private var sortOption: SortOption = .manual
 
@@ -58,8 +67,8 @@ struct KanbanBoardView: View {
                             allTasks: tasks,
                             groupByDate: groupByDate,
                             sortOption: sortOption,
-                            onAddCard: { newCardColumn = column; showCardEditor = true },
-                            onViewCard: { task in viewingTask = task; showCardDetail = true },
+                            onAddCard: { editorConfig = CardEditorConfig(task: nil, column: column) },
+                            onViewCard: { task in detailConfig = CardDetailConfig(task: task) },
                             onMoveCard: { task, newCol in moveCard(task, to: newCol) },
                             onReorder: { task, direction in reorderTask(task, direction: direction) }
                         )
@@ -69,23 +78,15 @@ struct KanbanBoardView: View {
             }
             .background(Color(nsColor: .windowBackgroundColor))
         }
-        .sheet(isPresented: $showCardEditor) {
-            CardEditorView(task: editingTask, defaultColumn: newCardColumn ?? .work)
+        .sheet(item: $editorConfig) { config in
+            CardEditorView(task: config.task, defaultColumn: config.column)
         }
-        .sheet(isPresented: $showCardDetail) {
-            if let task = viewingTask {
-                CardDetailView(
-                    task: task,
-                    onEdit: { editingTask = task; showCardEditor = true },
-                    onDelete: { context.delete(task) }
-                )
-            }
-        }
-        .onChange(of: showCardEditor) { _, isShowing in
-            if !isShowing { editingTask = nil; newCardColumn = nil }
-        }
-        .onChange(of: showCardDetail) { _, isShowing in
-            if !isShowing { viewingTask = nil }
+        .sheet(item: $detailConfig) { config in
+            CardDetailView(
+                task: config.task,
+                onEdit: { editorConfig = CardEditorConfig(task: config.task, column: config.task.column) },
+                onDelete: { context.delete(config.task) }
+            )
         }
     }
 
