@@ -137,13 +137,17 @@ class SyncManager: ObservableObject {
     // MARK: - Auto-Sync Timer
 
     private func startAutoSync() {
-        timer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 15, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.checkAndSync()
             }
         }
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
     }
 
+    // Status changes detected here trigger actual sync in MainTabView's .onChange(of: syncManager.status)
+    // When .syncing is set, MainTabView calls pushTasks/pushNotes or pullTasks/pullNotes
     private func checkAndSync() {
         let isAhead = detectLocalAhead()
         let isBehind = detectRemoteBehind()
@@ -152,6 +156,8 @@ class SyncManager: ObservableObject {
             handleLocalAhead()
         } else if isBehind && !isAhead {
             handleRemoteBehind()
+        } else if isAhead && isBehind {
+            status = .conflict
         } else if !isAhead && !isBehind {
             status = .inSync
         }
@@ -196,6 +202,7 @@ class SyncManager: ObservableObject {
 
         if elapsed >= pushDebounce {
             status = .syncing
+            lastLocalChange = nil
         } else {
             status = .localChanges
         }
