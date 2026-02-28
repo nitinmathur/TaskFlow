@@ -3,6 +3,7 @@ import SwiftUI
 struct KanbanColumnView: View {
     let column: Column
     let tasks: [TodoTask]
+    let allTasks: [TodoTask]
     let onAddCard: () -> Void
     let onEditCard: (TodoTask) -> Void
     let onMoveCard: (TodoTask, Column) -> Void
@@ -41,6 +42,12 @@ struct KanbanColumnView: View {
         .padding(8)
         .background(.background.secondary)
         .clipShape(RoundedRectangle(cornerRadius: 10))
-        .dropDestination(for: String.self) { _, _ in true }
+        .dropDestination(for: String.self) { items, _ in
+            guard let taskIdString = items.first,
+                  let taskId = UUID(uuidString: taskIdString),
+                  let task = allTasks.first(where: { $0.id == taskId }) else { return false }
+            onMoveCard(task, column)
+            return true
+        }
     }
 }

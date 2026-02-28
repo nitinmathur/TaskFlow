@@ -13,6 +13,7 @@ struct KanbanBoardView: View {
                 KanbanColumnView(
                     column: column,
                     tasks: tasks.filter { $0.column == column }.sorted { $0.position < $1.position },
+                    allTasks: tasks,
                     onAddCard: { newCardColumn = column; showCardEditor = true },
                     onEditCard: { task in editingTask = task; showCardEditor = true },
                     onMoveCard: { task, newCol in moveCard(task, to: newCol) }
