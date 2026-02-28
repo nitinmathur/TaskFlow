@@ -229,6 +229,19 @@ class SyncManager: ObservableObject {
 
     func markLocalChange() {
         lastLocalChange = Date()
+        status = .localChanges
+    }
+
+    // Called by MainTabView to update tracked data
+    private var lastTasksHash: Int = 0
+    private var lastNotesHash: Int = 0
+
+    func updateTrackedData(tasksHash: Int, notesHash: Int) {
+        if tasksHash != lastTasksHash || notesHash != lastNotesHash {
+            lastTasksHash = tasksHash
+            lastNotesHash = notesHash
+            markLocalChange()
+        }
     }
 
     // MARK: - File Watcher

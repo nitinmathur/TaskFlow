@@ -11,9 +11,6 @@ struct MainTabView: View {
     @Query private var notes: [Note]
     @State private var selectedTab: AppTab = .tasks
     @StateObject private var syncManager = SyncManager()
-    @State private var lastKnownTasksHash: Int = 0
-    @State private var lastKnownNotesHash: Int = 0
-    @State private var changeTrackingTimer: Timer?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -46,16 +43,13 @@ struct MainTabView: View {
         .frame(minWidth: 900, minHeight: 500)
         .onAppear {
             syncManager.checkForRemoteChanges()
-            startChangeTracking()
         }
-        .onDisappear {
-            changeTrackingTimer?.invalidate()
+        // Track data changes using computed hash
+        .onChange(of: tasksHash) { _, newHash in
+            syncManager.updateTrackedData(tasksHash: newHash, notesHash: notesHash)
         }
-        .onChange(of: tasks.count) { _, _ in
-            syncManager.markLocalChange()
-        }
-        .onChange(of: notes.count) { _, _ in
-            syncManager.markLocalChange()
+        .onChange(of: notesHash) { _, newHash in
+            syncManager.updateTrackedData(tasksHash: tasksHash, notesHash: newHash)
         }
         .onChange(of: syncManager.status) { _, newStatus in
             if newStatus == .syncing {
@@ -65,37 +59,13 @@ struct MainTabView: View {
                     pullChanges()
                 }
             } else if newStatus == .conflict {
-                // TODO: Show conflict resolution UI
                 print("Sync conflict detected - manual intervention required")
             }
         }
     }
 
-    private func startChangeTracking() {
-        // Initialize hash values
-        lastKnownTasksHash = computeTasksHash()
-        lastKnownNotesHash = computeNotesHash()
-
-        // Check for changes every 5 seconds
-        let timer = Timer(timeInterval: 5.0, repeats: true) { [self] _ in
-            checkForLocalChanges()
-        }
-        RunLoop.main.add(timer, forMode: .common)
-        changeTrackingTimer = timer
-    }
-
-    private func checkForLocalChanges() {
-        let currentTasksHash = computeTasksHash()
-        let currentNotesHash = computeNotesHash()
-
-        if currentTasksHash != lastKnownTasksHash || currentNotesHash != lastKnownNotesHash {
-            lastKnownTasksHash = currentTasksHash
-            lastKnownNotesHash = currentNotesHash
-            syncManager.markLocalChange()
-        }
-    }
-
-    private func computeTasksHash() -> Int {
+    // Computed properties for tracking changes
+    private var tasksHash: Int {
         var hasher = Hasher()
         for task in tasks {
             hasher.combine(task.id)
@@ -110,7 +80,7 @@ struct MainTabView: View {
         return hasher.finalize()
     }
 
-    private func computeNotesHash() -> Int {
+    private var notesHash: Int {
         var hasher = Hasher()
         for note in notes {
             hasher.combine(note.id)
