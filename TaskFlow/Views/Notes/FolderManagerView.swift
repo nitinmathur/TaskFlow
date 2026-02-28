@@ -4,6 +4,7 @@ import SwiftData
 struct FolderManagerView: View {
     @Query private var notes: [Note]
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
     @State private var newFolderName = ""
     @State private var editingFolder: String?
     @State private var editName = ""
@@ -40,6 +41,14 @@ struct FolderManagerView: View {
                         if editingFolder == folder {
                             TextField("Folder name", text: $editName)
                                 .textFieldStyle(.plain)
+                                .onSubmit { saveRename(from: folder) }
+                            Button("Save") { saveRename(from: folder) }
+                                .buttonStyle(.borderless)
+                            Button("Cancel") {
+                                editingFolder = nil
+                                editName = ""
+                            }
+                            .buttonStyle(.borderless)
                         } else {
                             Text(folder)
                             Spacer()
@@ -83,5 +92,24 @@ struct FolderManagerView: View {
         if count > 0 {
             // Show alert - implement in parent
         }
+    }
+
+    private func saveRename(from oldName: String) {
+        let trimmed = editName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              trimmed != "All Notes",
+              trimmed != oldName,
+              !folders.contains(trimmed) else {
+            editingFolder = nil
+            return
+        }
+
+        // Update all notes with old folder name
+        notes.filter { $0.folderName == oldName }.forEach {
+            $0.folderName = trimmed
+        }
+
+        editingFolder = nil
+        editName = ""
     }
 }
