@@ -10,13 +10,19 @@
 		043609B05E17CCE203317A19 /* CardEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 417C409E6EF3154E39C515C1 /* CardEditorView.swift */; };
 		52E58AE6B8E842B3004A0AA4 /* NoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5411D2FAA8D5370CAF20C6D /* NoteEditorView.swift */; };
 		54FB6D4B4502B4BE430F4929 /* Column.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36E4FC1F06B7956AD415A721 /* Column.swift */; };
+		6AAB42F6A8B5DA94C8F9D9C7 /* MarkdownComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6737341692B3F395292568E /* MarkdownComponents.swift */; };
+		86F8391FE228EA16BC9D6B42 /* SyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 561FB3213C322A2E70822E54 /* SyncManager.swift */; };
 		9F3853A47327A81BE1A7A32C /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D10ACFA780286105CD15B016 /* MainTabView.swift */; };
+		B5B55BC0C99AD34FEA8EBCBB /* FolderManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DEFEA7297AEA6E49D0687F3 /* FolderManagerView.swift */; };
 		B653B9C0B5D7BB364FED9CA6 /* NotesSplitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBC75546B3AFBA88E75B6734 /* NotesSplitView.swift */; };
+		BF0F3F1D3C0050B903B2C568 /* SyncToolbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89ADBEF217DEA65E9280C7CF /* SyncToolbarView.swift */; };
 		BFB1E9A9AFFD66A1C30065D0 /* TaskFlowApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E89599E8AEAD431D6B3745B8 /* TaskFlowApp.swift */; };
+		BFDAF6EF14D7C7F0C9FD8383 /* CardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1779725FFA4245A2EEAA28 /* CardDetailView.swift */; };
 		C30CC172D97CDD6ACB48D4D1 /* KanbanBoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFA18650967175E6497E7065 /* KanbanBoardView.swift */; };
 		C4AFFED9B56837B06B46BD9B /* TodoTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183E4E86AE12FC7E8D054CF7 /* TodoTask.swift */; };
 		D7C1FC73BE6C061A77237B0B /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6787EA1FC86B99BF59F1068 /* Note.swift */; };
 		E174E6E4C8CCF587D7576212 /* KanbanCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F201481474E2100B187F355 /* KanbanCardView.swift */; };
+		E8A7DBE1435375472866C57F /* MarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7EC39357B3D45F9B16DE970 /* MarkdownRenderer.swift */; };
 		F4CDAFEB2D27416B7003EAC3 /* KanbanColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A42D93EA3A5811C081F459C /* KanbanColumnView.swift */; };
 /* End PBXBuildFile section */
 
@@ -27,10 +33,16 @@
 		183E4E86AE12FC7E8D054CF7 /* TodoTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoTask.swift; sourceTree = "<group>"; };
 		36E4FC1F06B7956AD415A721 /* Column.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Column.swift; sourceTree = "<group>"; };
 		417C409E6EF3154E39C515C1 /* CardEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardEditorView.swift; sourceTree = "<group>"; };
+		561FB3213C322A2E70822E54 /* SyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncManager.swift; sourceTree = "<group>"; };
+		5A1779725FFA4245A2EEAA28 /* CardDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardDetailView.swift; sourceTree = "<group>"; };
+		5DEFEA7297AEA6E49D0687F3 /* FolderManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderManagerView.swift; sourceTree = "<group>"; };
+		89ADBEF217DEA65E9280C7CF /* SyncToolbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncToolbarView.swift; sourceTree = "<group>"; };
 		BBC75546B3AFBA88E75B6734 /* NotesSplitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesSplitView.swift; sourceTree = "<group>"; };
 		BFA18650967175E6497E7065 /* KanbanBoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KanbanBoardView.swift; sourceTree = "<group>"; };
+		C7EC39357B3D45F9B16DE970 /* MarkdownRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownRenderer.swift; sourceTree = "<group>"; };
 		D10ACFA780286105CD15B016 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		D5411D2FAA8D5370CAF20C6D /* NoteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEditorView.swift; sourceTree = "<group>"; };
+		D6737341692B3F395292568E /* MarkdownComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownComponents.swift; sourceTree = "<group>"; };
 		E6FF2BD4A15C028AD24D7738 /* TaskFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TaskFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E89599E8AEAD431D6B3745B8 /* TaskFlowApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFlowApp.swift; sourceTree = "<group>"; };
 		F6787EA1FC86B99BF59F1068 /* Note.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Note.swift; sourceTree = "<group>"; };
@@ -40,6 +52,9 @@
 		18417A05AFCC69AFF9DCEF7D /* Notes */ = {
 			isa = PBXGroup;
 			children = (
+				5DEFEA7297AEA6E49D0687F3 /* FolderManagerView.swift */,
+				D6737341692B3F395292568E /* MarkdownComponents.swift */,
+				C7EC39357B3D45F9B16DE970 /* MarkdownRenderer.swift */,
 				D5411D2FAA8D5370CAF20C6D /* NoteEditorView.swift */,
 				BBC75546B3AFBA88E75B6734 /* NotesSplitView.swift */,
 			);
@@ -60,9 +75,18 @@
 				09AE62E98FA111629360AB0D /* TaskFlow.entitlements */,
 				E89599E8AEAD431D6B3745B8 /* TaskFlowApp.swift */,
 				5A70153EA0B07D525EC993FE /* Models */,
+				59B704315E475A3BD885A717 /* Sync */,
 				8D5D3B6803DBB4801307D62D /* Views */,
 			);
 			path = TaskFlow;
+			sourceTree = "<group>";
+		};
+		59B704315E475A3BD885A717 /* Sync */ = {
+			isa = PBXGroup;
+			children = (
+				561FB3213C322A2E70822E54 /* SyncManager.swift */,
+			);
+			path = Sync;
 			sourceTree = "<group>";
 		};
 		5A70153EA0B07D525EC993FE /* Models */ = {
@@ -79,6 +103,7 @@
 			isa = PBXGroup;
 			children = (
 				D10ACFA780286105CD15B016 /* MainTabView.swift */,
+				89ADBEF217DEA65E9280C7CF /* SyncToolbarView.swift */,
 				BB84C5C0DF32549F09057C06 /* Kanban */,
 				18417A05AFCC69AFF9DCEF7D /* Notes */,
 			);
@@ -88,6 +113,7 @@
 		BB84C5C0DF32549F09057C06 /* Kanban */ = {
 			isa = PBXGroup;
 			children = (
+				5A1779725FFA4245A2EEAA28 /* CardDetailView.swift */,
 				417C409E6EF3154E39C515C1 /* CardEditorView.swift */,
 				BFA18650967175E6497E7065 /* KanbanBoardView.swift */,
 				0F201481474E2100B187F355 /* KanbanCardView.swift */,
@@ -163,15 +189,21 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BFDAF6EF14D7C7F0C9FD8383 /* CardDetailView.swift in Sources */,
 				043609B05E17CCE203317A19 /* CardEditorView.swift in Sources */,
 				54FB6D4B4502B4BE430F4929 /* Column.swift in Sources */,
+				B5B55BC0C99AD34FEA8EBCBB /* FolderManagerView.swift in Sources */,
 				C30CC172D97CDD6ACB48D4D1 /* KanbanBoardView.swift in Sources */,
 				E174E6E4C8CCF587D7576212 /* KanbanCardView.swift in Sources */,
 				F4CDAFEB2D27416B7003EAC3 /* KanbanColumnView.swift in Sources */,
 				9F3853A47327A81BE1A7A32C /* MainTabView.swift in Sources */,
+				6AAB42F6A8B5DA94C8F9D9C7 /* MarkdownComponents.swift in Sources */,
+				E8A7DBE1435375472866C57F /* MarkdownRenderer.swift in Sources */,
 				D7C1FC73BE6C061A77237B0B /* Note.swift in Sources */,
 				52E58AE6B8E842B3004A0AA4 /* NoteEditorView.swift in Sources */,
 				B653B9C0B5D7BB364FED9CA6 /* NotesSplitView.swift in Sources */,
+				86F8391FE228EA16BC9D6B42 /* SyncManager.swift in Sources */,
+				BF0F3F1D3C0050B903B2C568 /* SyncToolbarView.swift in Sources */,
 				BFB1E9A9AFFD66A1C30065D0 /* TaskFlowApp.swift in Sources */,
 				C4AFFED9B56837B06B46BD9B /* TodoTask.swift in Sources */,
 			);
