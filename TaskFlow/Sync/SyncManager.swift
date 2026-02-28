@@ -93,11 +93,17 @@ class SyncManager: ObservableObject {
     @Published var status: SyncStatus = .inSync
     @Published var lastSyncTime: Date?
     @Published var pendingRemoteChanges: Int = 0
+    @Published var countdown: Int = 0
 
     private let sharedURL: URL
     private let tasksURL: URL
     private let notesURL: URL
     private var fileWatcher: DispatchSourceFileSystemObject?
+    private var timer: Timer?
+    private var lastLocalChange: Date?
+    private let pushDebounce: TimeInterval = 60  // 1 minute
+    private let pullDelay: TimeInterval = 10      // 10 seconds
+    private var pullCountdownDate: Date?
 
     init() {
         let home = FileManager.default.homeDirectoryForCurrentUser
@@ -115,15 +121,105 @@ class SyncManager: ObservableObject {
 
         setupDirectories()
         startFileWatcher()
+        startAutoSync()
     }
 
     deinit {
         fileWatcher?.cancel()
+        timer?.invalidate()
     }
 
     private func setupDirectories() {
         try? FileManager.default.createDirectory(at: tasksURL, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: notesURL, withIntermediateDirectories: true)
+    }
+
+    // MARK: - Auto-Sync Timer
+
+    private func startAutoSync() {
+        timer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.checkAndSync()
+            }
+        }
+    }
+
+    private func checkAndSync() {
+        let isAhead = detectLocalAhead()
+        let isBehind = detectRemoteBehind()
+
+        if isAhead && !isBehind {
+            handleLocalAhead()
+        } else if isBehind && !isAhead {
+            handleRemoteBehind()
+        } else if !isAhead && !isBehind {
+            status = .inSync
+        }
+    }
+
+    private func detectLocalAhead() -> Bool {
+        return lastLocalChange != nil
+    }
+
+    private func detectRemoteBehind() -> Bool {
+        guard let lastSync = lastSyncTime else { return true }
+
+        let fm = FileManager.default
+        var hasNewer = false
+
+        if let files = try? fm.contentsOfDirectory(at: tasksURL, includingPropertiesForKeys: [.contentModificationDateKey]) {
+            for file in files where file.pathExtension == "json" {
+                if let modDate = try? file.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
+                   modDate > lastSync {
+                    hasNewer = true
+                    break
+                }
+            }
+        }
+
+        if !hasNewer, let files = try? fm.contentsOfDirectory(at: notesURL, includingPropertiesForKeys: [.contentModificationDateKey]) {
+            for file in files where file.pathExtension == "json" {
+                if let modDate = try? file.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
+                   modDate > lastSync {
+                    hasNewer = true
+                    break
+                }
+            }
+        }
+
+        return hasNewer
+    }
+
+    private func handleLocalAhead() {
+        guard let lastChange = lastLocalChange else { return }
+        let elapsed = Date().timeIntervalSince(lastChange)
+
+        if elapsed >= pushDebounce {
+            status = .syncing
+        } else {
+            status = .localChanges
+        }
+    }
+
+    private func handleRemoteBehind() {
+        if pullCountdownDate == nil {
+            pullCountdownDate = Date().addingTimeInterval(pullDelay)
+            status = .remoteChanges
+        }
+
+        if let countdownDate = pullCountdownDate {
+            let remaining = countdownDate.timeIntervalSinceNow
+            countdown = max(0, Int(ceil(remaining)))
+
+            if remaining <= 0 {
+                status = .syncing
+                pullCountdownDate = nil
+            }
+        }
+    }
+
+    func markLocalChange() {
+        lastLocalChange = Date()
     }
 
     // MARK: - File Watcher
