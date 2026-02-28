@@ -1,0 +1,20 @@
+name: TaskFlow
+options:
+  bundleIdPrefix: com.nmathur
+  deploymentTarget:
+    macOS: "14.0"
+
+targets:
+  TaskFlow:
+    type: application
+    platform: macOS
+    sources:
+      - TaskFlow
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.nmathur.taskflow
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        ENABLE_HARDENED_RUNTIME: NO
