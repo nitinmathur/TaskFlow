@@ -36,13 +36,13 @@ struct SyncToolbarView: View {
 
     private var statusText: String {
         switch syncManager.status {
-        case .inSync: "Synced"
-        case .localChanges: "Syncing soon..."
+        case .inSync: return "Synced"
+        case .localChanges: return "Syncing soon..."
         case .remoteChanges:
             let count = syncManager.countdown
             return "Updates - pulling in \(count)s"
-        case .conflict: "Conflict"
-        case .syncing: "Syncing..."
+        case .conflict: return "Conflict"
+        case .syncing: return "Syncing..."
         }
     }
 }
