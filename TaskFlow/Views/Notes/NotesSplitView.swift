@@ -15,9 +15,15 @@ struct NotesSplitView: View {
     @State private var selectedFolder = "All Notes"
     @State private var sortOption: NoteSortOption = .manual
     @State private var showFolderManager = false
+    @AppStorage("customFolders") private var customFoldersData: Data = Data()
+
+    private var customFolders: Set<String> {
+        (try? JSONDecoder().decode(Set<String>.self, from: customFoldersData)) ?? []
+    }
 
     private var folders: [String] {
         var unique = Set(notes.map(\.folderName))
+        unique.formUnion(customFolders)
         unique.insert("All Notes")
         return Array(unique).sorted { f1, f2 in
             if f1 == "All Notes" { return true }

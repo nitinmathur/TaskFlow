@@ -9,8 +9,21 @@ struct FolderManagerView: View {
     @State private var editingFolder: String?
     @State private var editName = ""
 
+    @AppStorage("customFolders") private var customFoldersData: Data = Data()
+
+    private var customFolders: Set<String> {
+        get {
+            (try? JSONDecoder().decode(Set<String>.self, from: customFoldersData)) ?? []
+        }
+    }
+
+    private func saveCustomFolders(_ folders: Set<String>) {
+        customFoldersData = (try? JSONEncoder().encode(folders)) ?? Data()
+    }
+
     private var folders: [String] {
         var unique = Set(notes.map(\.folderName))
+        unique.formUnion(customFolders)
         unique.insert("All Notes")
         return Array(unique).sorted { f1, f2 in
             if f1 == "All Notes" { return true }
@@ -82,16 +95,31 @@ struct FolderManagerView: View {
     }
 
     private func addFolder() {
-        // Folder created when first note added
+        let trimmed = newFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              trimmed != "All Notes",
+              !folders.contains(trimmed) else {
+            newFolderName = ""
+            return
+        }
+
+        var updated = customFolders
+        updated.insert(trimmed)
+        saveCustomFolders(updated)
         newFolderName = ""
-        dismiss()
     }
 
     private func deleteFolder(_ folder: String) {
         let count = noteCount(for: folder)
         if count > 0 {
-            // Show alert - implement in parent
+            // Can't delete folder with notes - move notes to All Notes first
+            return
         }
+
+        // Remove from custom folders
+        var updated = customFolders
+        updated.remove(folder)
+        saveCustomFolders(updated)
     }
 
     private func saveRename(from oldName: String) {

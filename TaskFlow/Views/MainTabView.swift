@@ -20,7 +20,11 @@ struct MainTabView: View {
             // Sync toolbar at top
             HStack {
                 Spacer()
-                SyncToolbarView(syncManager: syncManager)
+                SyncToolbarView(
+                    syncManager: syncManager,
+                    onPush: { pushChanges() },
+                    onPull: { pullChanges() }
+                )
             }
             .padding(.horizontal)
             .padding(.vertical, 6)

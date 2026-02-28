@@ -94,6 +94,7 @@ class SyncManager: ObservableObject {
     @Published var lastSyncTime: Date?
     @Published var pendingRemoteChanges: Int = 0
     @Published var countdown: Int = 0
+    @Published var isPushing: Bool = false
 
     private let sharedURL: URL
     private let tasksURL: URL
@@ -101,8 +102,8 @@ class SyncManager: ObservableObject {
     private var fileWatcher: DispatchSourceFileSystemObject?
     private var timer: Timer?
     private var lastLocalChange: Date?
-    private let pushDebounce: TimeInterval = 60  // 1 minute
-    private let pullDelay: TimeInterval = 10      // 10 seconds
+    private let pushDebounce: TimeInterval = 10  // 10 seconds (reduced from 60)
+    private let pullDelay: TimeInterval = 5      // 5 seconds (reduced from 10)
     private var pullCountdownDate: Date?
 
     init() {
@@ -168,7 +169,9 @@ class SyncManager: ObservableObject {
     }
 
     private func detectRemoteBehind() -> Bool {
-        guard let lastSync = lastSyncTime else { return true }
+        // If we've never synced, don't assume remote is behind
+        // Wait for user to manually push or pull
+        guard let lastSync = lastSyncTime else { return false }
 
         let fm = FileManager.default
         var hasNewer = false
@@ -285,6 +288,7 @@ class SyncManager: ObservableObject {
     // MARK: - Push (Local → Shared)
 
     func pushTasks(_ tasks: [TodoTask]) throws {
+        isPushing = true
         status = .syncing
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -314,6 +318,7 @@ class SyncManager: ObservableObject {
     }
 
     func pushNotes(_ notes: [Note]) throws {
+        isPushing = true
         status = .syncing
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -345,6 +350,7 @@ class SyncManager: ObservableObject {
     // MARK: - Pull (Shared → Local)
 
     func pullTasks(context: ModelContext, localTasks: [TodoTask]) throws -> [TodoTask] {
+        isPushing = false
         status = .syncing
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
