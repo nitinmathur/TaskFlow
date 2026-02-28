@@ -9,7 +9,7 @@ enum NoteSortOption: String, CaseIterable {
 }
 
 struct NotesSplitView: View {
-    @Query private var notes: [Note]
+    @Query(sort: \Note.position) private var notes: [Note]
     @Environment(\.modelContext) private var context
     @State private var selectedNote: Note?
     @State private var selectedFolder = "All Notes"
@@ -132,6 +132,13 @@ struct NotesSplitView: View {
         }
         .sheet(isPresented: $showFolderManager) {
             FolderManagerView()
+        }
+        .onChange(of: selectedFolder) { _, _ in
+            if let selected = selectedNote,
+               selectedFolder != "All Notes" &&
+               selected.folderName != selectedFolder {
+                selectedNote = nil
+            }
         }
     }
 
@@ -294,12 +301,14 @@ struct NotesListView: View {
     }
 
     private func moveToTop(_ note: Note) {
-        let minPosition = notes.map(\.position).min() ?? 0
+        let folderNotes = notes.filter { $0.folderName == note.folderName }
+        let minPosition = folderNotes.map(\.position).min() ?? 0
         note.position = minPosition - 1
     }
 
     private func moveToBottom(_ note: Note) {
-        let maxPosition = notes.map(\.position).max() ?? 0
+        let folderNotes = notes.filter { $0.folderName == note.folderName }
+        let maxPosition = folderNotes.map(\.position).max() ?? 0
         note.position = maxPosition + 1
     }
 }
