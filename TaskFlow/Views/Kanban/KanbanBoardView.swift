@@ -8,11 +8,11 @@ enum SortOption: String, CaseIterable {
     case dueDate = "Due Date"
 }
 
-// Helper for sheet presentation
+// Helper for sheet presentation - now uses BoardColumn
 struct CardEditorConfig: Identifiable {
     let id = UUID()
     let task: TodoTask?
-    let column: Column
+    let column: BoardColumn
 }
 
 struct CardDetailConfig: Identifiable {
@@ -22,6 +22,7 @@ struct CardDetailConfig: Identifiable {
 
 struct KanbanBoardView: View {
     @Query private var tasks: [TodoTask]
+    @Query(sort: \BoardColumn.position) private var columns: [BoardColumn]
     @Environment(\.modelContext) private var context
     @State private var editorConfig: CardEditorConfig?
     @State private var detailConfig: CardDetailConfig?
@@ -60,7 +61,7 @@ struct KanbanBoardView: View {
             // Board
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 16) {
-                    ForEach(Column.allCases, id: \.self) { column in
+                    ForEach(columns) { column in
                         KanbanColumnView(
                             column: column,
                             tasks: sortedTasks(for: column),
@@ -70,28 +71,63 @@ struct KanbanBoardView: View {
                             onAddCard: { editorConfig = CardEditorConfig(task: nil, column: column) },
                             onViewCard: { task in detailConfig = CardDetailConfig(task: task) },
                             onMoveCard: { task, newCol in moveCard(task, to: newCol) },
-                            onReorder: { task, direction in reorderTask(task, direction: direction) }
+                            onReorder: { task, direction in reorderTask(task, direction: direction, in: column) }
                         )
                     }
+
+                    // Add Column Button
+                    addColumnButton
                 }
                 .padding()
             }
             .background(Color(nsColor: .windowBackgroundColor))
         }
         .sheet(item: $editorConfig) { config in
-            CardEditorView(task: config.task, defaultColumn: config.column)
+            CardEditorView(task: config.task, defaultColumn: config.column, allColumns: columns)
         }
         .sheet(item: $detailConfig) { config in
             CardDetailView(
                 task: config.task,
-                onEdit: { editorConfig = CardEditorConfig(task: config.task, column: config.task.column) },
+                onEdit: {
+                    if let column = columns.first(where: { $0.id == config.task.columnId }) {
+                        editorConfig = CardEditorConfig(task: config.task, column: column)
+                    } else if let firstColumn = columns.first {
+                        editorConfig = CardEditorConfig(task: config.task, column: firstColumn)
+                    }
+                },
                 onDelete: { context.delete(config.task) }
             )
         }
     }
 
-    private func sortedTasks(for column: Column) -> [TodoTask] {
-        let columnTasks = tasks.filter { $0.column == column }
+    // MARK: - Add Column Button
+
+    private var addColumnButton: some View {
+        Button {
+            // Column add logic will be implemented in Task 7
+        } label: {
+            VStack(spacing: 8) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.title2)
+                Text("Add Column")
+                    .font(.caption)
+            }
+            .foregroundStyle(.secondary)
+            .frame(width: 100)
+            .frame(minHeight: 400)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [8]))
+                    .foregroundStyle(.secondary.opacity(0.3))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Task Sorting & Filtering
+
+    private func sortedTasks(for column: BoardColumn) -> [TodoTask] {
+        let columnTasks = tasks.filter { $0.columnId == column.id && !$0.isArchived }
 
         switch sortOption {
         case .manual:
@@ -117,11 +153,15 @@ struct KanbanBoardView: View {
         }
     }
 
-    private func moveCard(_ task: TodoTask, to column: Column) {
-        let targetTasks = tasks.filter { $0.column == column }
+    // MARK: - Card Actions
+
+    private func moveCard(_ task: TodoTask, to column: BoardColumn) {
+        let targetTasks = tasks.filter { $0.columnId == column.id }
         task.position = (targetTasks.map(\.position).max() ?? -1) + 1
-        task.column = column
-        if column == .completed {
+        task.columnId = column.id
+
+        // Handle completion status based on isSystem flag (system column = completed)
+        if column.isSystem {
             task.isCompleted = true
             task.completedAt = Date()
         } else if task.isCompleted {
@@ -130,8 +170,8 @@ struct KanbanBoardView: View {
         }
     }
 
-    private func reorderTask(_ task: TodoTask, direction: Int) {
-        let columnTasks = tasks.filter { $0.column == task.column }.sorted { $0.position < $1.position }
+    private func reorderTask(_ task: TodoTask, direction: Int, in column: BoardColumn) {
+        let columnTasks = tasks.filter { $0.columnId == column.id }.sorted { $0.position < $1.position }
         guard let currentIndex = columnTasks.firstIndex(where: { $0.id == task.id }) else { return }
 
         let newIndex = currentIndex + direction

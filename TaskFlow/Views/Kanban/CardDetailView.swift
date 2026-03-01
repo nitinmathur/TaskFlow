@@ -1,10 +1,16 @@
 import SwiftUI
+import SwiftData
 
 struct CardDetailView: View {
     @Bindable var task: TodoTask
     let onEdit: () -> Void
     let onDelete: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @Query(sort: \BoardColumn.position) private var columns: [BoardColumn]
+
+    private var taskColumn: BoardColumn? {
+        columns.first { $0.id == task.columnId }
+    }
 
     private var priorityColor: Color {
         switch task.priority {
@@ -43,16 +49,18 @@ struct CardDetailView: View {
                         .textSelection(.enabled)
 
                     // Column badge
-                    HStack {
-                        Image(systemName: task.column.icon)
-                        Text(task.column.title)
+                    if let col = taskColumn {
+                        HStack {
+                            Image(systemName: col.icon)
+                            Text(col.name)
+                        }
+                        .font(.caption)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(columnColor.opacity(0.15))
+                        .foregroundStyle(columnColor)
+                        .clipShape(Capsule())
                     }
-                    .font(.caption)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(columnColor.opacity(0.15))
-                    .foregroundStyle(columnColor)
-                    .clipShape(Capsule())
 
                     // Due date
                     if let due = task.dueDate {
@@ -172,11 +180,16 @@ struct CardDetailView: View {
     }
 
     private var columnColor: Color {
-        switch task.column {
-        case .work: .blue
-        case .personal: .green
-        case .ideas: .purple
-        case .completed: .gray
+        guard let col = taskColumn else { return .gray }
+        switch col.icon {
+        case "briefcase.fill": return .blue
+        case "person.fill": return .green
+        case "lightbulb.fill": return .purple
+        case "checkmark.circle.fill": return .gray
+        default:
+            // Generate color based on position for custom columns
+            let colors: [Color] = [.blue, .green, .purple, .orange, .pink, .cyan, .mint, .indigo]
+            return colors[col.position % colors.count]
         }
     }
 

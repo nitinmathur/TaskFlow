@@ -1,22 +1,27 @@
 import SwiftUI
 
 struct KanbanColumnView: View {
-    let column: Column
+    let column: BoardColumn
     let tasks: [TodoTask]
     let allTasks: [TodoTask]
     let groupByDate: Bool
     let sortOption: SortOption
     let onAddCard: () -> Void
     let onViewCard: (TodoTask) -> Void
-    let onMoveCard: (TodoTask, Column) -> Void
+    let onMoveCard: (TodoTask, BoardColumn) -> Void
     let onReorder: (TodoTask, Int) -> Void
 
+    // Color based on column icon or position
     private var columnColor: Color {
-        switch column {
-        case .work: .blue
-        case .personal: .green
-        case .ideas: .purple
-        case .completed: .gray
+        switch column.icon {
+        case "briefcase.fill": return .blue
+        case "person.fill": return .green
+        case "lightbulb.fill": return .purple
+        case "checkmark.circle.fill": return .gray
+        default:
+            // Generate color based on position for custom columns
+            let colors: [Color] = [.blue, .green, .purple, .orange, .pink, .cyan, .mint, .indigo]
+            return colors[column.position % colors.count]
         }
     }
 
@@ -53,7 +58,7 @@ struct KanbanColumnView: View {
                 Image(systemName: column.icon)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(columnColor)
-                Text(column.title)
+                Text(column.name)
                     .font(.subheadline.weight(.semibold))
                 Spacer()
                 Text("\(tasks.count)")
@@ -98,8 +103,8 @@ struct KanbanColumnView: View {
                 .padding(.bottom, 8)
             }
 
-            // Add Button
-            if column != .completed {
+            // Add Button (hide for system/completed columns)
+            if !column.isSystem {
                 Button(action: onAddCard) {
                     HStack {
                         Image(systemName: "plus.circle.fill")

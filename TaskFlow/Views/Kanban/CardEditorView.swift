@@ -6,16 +6,21 @@ struct CardEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @Query private var allTasks: [TodoTask]
     let task: TodoTask?
-    let defaultColumn: Column
+    let defaultColumn: BoardColumn
+    let allColumns: [BoardColumn]
     @State private var title = ""
     @State private var desc = ""
-    @State private var column: Column = .work
+    @State private var selectedColumnId: UUID?
     @State private var priority: Priority = .medium
     @State private var hasDueDate = false
     @State private var dueDate = Date()
     @State private var checklist: [ChecklistItem] = []
     @State private var newItemText = ""
     private var isEditing: Bool { task != nil }
+
+    private var selectedColumn: BoardColumn? {
+        allColumns.first { $0.id == selectedColumnId }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -52,8 +57,10 @@ struct CardEditorView: View {
                             HStack {
                                 Text("Column")
                                 Spacer()
-                                Picker("", selection: $column) {
-                                    ForEach(Column.allCases, id: \.self) { Text($0.title) }
+                                Picker("", selection: $selectedColumnId) {
+                                    ForEach(allColumns.filter { !$0.isSystem }) { col in
+                                        Text(col.name).tag(col.id as UUID?)
+                                    }
                                 }.labelsHidden().frame(width: 120)
                             }
                             Divider()
@@ -145,11 +152,11 @@ struct CardEditorView: View {
     }
 
     private func loadTask() {
-        column = defaultColumn
+        selectedColumnId = defaultColumn.id
         guard let task else { return }
         title = task.title
         desc = task.taskDescription ?? ""
-        column = task.column
+        selectedColumnId = task.columnId ?? defaultColumn.id
         priority = task.priority
         hasDueDate = task.dueDate != nil
         dueDate = task.dueDate ?? Date()
@@ -157,26 +164,28 @@ struct CardEditorView: View {
     }
 
     private func save() {
+        guard let columnId = selectedColumnId else { return }
+
         if let task {
             task.title = title
             task.taskDescription = desc.isEmpty ? nil : desc
-            task.column = column
+            task.columnId = columnId
             task.priority = priority
             task.dueDate = hasDueDate ? dueDate : nil
             task.checklist = checklist
         } else {
             // Calculate position for new task
-            let columnTasks = allTasks.filter { $0.column == column }
+            let columnTasks = allTasks.filter { $0.columnId == columnId }
             let maxPosition = columnTasks.map(\.position).max() ?? -1
 
             let newTask = TodoTask(
                 title: title,
                 description: desc.isEmpty ? nil : desc,
-                column: column,
                 priority: priority,
                 dueDate: hasDueDate ? dueDate : nil,
                 position: maxPosition + 1
             )
+            newTask.columnId = columnId
             newTask.checklist = checklist
             context.insert(newTask)
         }

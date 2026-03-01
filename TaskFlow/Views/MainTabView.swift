@@ -73,7 +73,7 @@ struct MainTabView: View {
             hasher.combine(task.id)
             hasher.combine(task.title)
             hasher.combine(task.taskDescription)
-            hasher.combine(task.column.rawValue)
+            hasher.combine(task.columnId)
             hasher.combine(task.priority.rawValue)
             hasher.combine(task.position)
             hasher.combine(task.isCompleted)
