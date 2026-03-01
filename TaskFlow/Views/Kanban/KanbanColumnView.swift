@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct KanbanColumnView: View {
-    let column: BoardColumn
+    @Bindable var column: BoardColumn
     let tasks: [TodoTask]
     let allTasks: [TodoTask]
     let groupByDate: Bool
@@ -10,6 +10,11 @@ struct KanbanColumnView: View {
     let onViewCard: (TodoTask) -> Void
     let onMoveCard: (TodoTask, BoardColumn) -> Void
     let onReorder: (TodoTask, Int) -> Void
+    var onDeleteColumn: () -> Void = {}
+    var onMoveColumnLeft: () -> Void = {}
+    var onMoveColumnRight: () -> Void = {}
+    var canMoveLeft: Bool = false
+    var canMoveRight: Bool = false
 
     // Color based on column icon or position
     private var columnColor: Color {
@@ -54,23 +59,15 @@ struct KanbanColumnView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Column Header
-            HStack(spacing: 8) {
-                Image(systemName: column.icon)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(columnColor)
-                Text(column.name)
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                Text("\(tasks.count)")
-                    .font(.caption.weight(.medium))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(columnColor.opacity(0.15))
-                    .foregroundStyle(columnColor)
-                    .clipShape(Capsule())
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 4)
+            ColumnHeaderView(
+                column: column,
+                taskCount: tasks.count,
+                onDelete: onDeleteColumn,
+                onMoveLeft: onMoveColumnLeft,
+                onMoveRight: onMoveColumnRight,
+                canMoveLeft: canMoveLeft,
+                canMoveRight: canMoveRight
+            )
 
             // Cards
             ScrollView {

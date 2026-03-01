@@ -28,6 +28,7 @@ struct KanbanBoardView: View {
     @State private var detailConfig: CardDetailConfig?
     @State private var groupByDate = false
     @State private var sortOption: SortOption = .manual
+    @State private var showAddColumnPopover = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -71,7 +72,12 @@ struct KanbanBoardView: View {
                             onAddCard: { editorConfig = CardEditorConfig(task: nil, column: column) },
                             onViewCard: { task in detailConfig = CardDetailConfig(task: task) },
                             onMoveCard: { task, newCol in moveCard(task, to: newCol) },
-                            onReorder: { task, direction in reorderTask(task, direction: direction, in: column) }
+                            onReorder: { task, direction in reorderTask(task, direction: direction, in: column) },
+                            onDeleteColumn: { deleteColumn(column) },
+                            onMoveColumnLeft: { moveColumn(column, direction: -1) },
+                            onMoveColumnRight: { moveColumn(column, direction: 1) },
+                            canMoveLeft: canMoveColumn(column, direction: -1),
+                            canMoveRight: canMoveColumn(column, direction: 1)
                         )
                     }
 
@@ -104,7 +110,7 @@ struct KanbanBoardView: View {
 
     private var addColumnButton: some View {
         Button {
-            // Column add logic will be implemented in Task 7
+            showAddColumnPopover = true
         } label: {
             VStack(spacing: 8) {
                 Image(systemName: "plus.circle.fill")
@@ -122,6 +128,83 @@ struct KanbanBoardView: View {
             )
         }
         .buttonStyle(.plain)
+        .popover(isPresented: $showAddColumnPopover) {
+            AddColumnPopover(isPresented: $showAddColumnPopover) { name, icon in
+                addColumn(name: name, icon: icon)
+            }
+        }
+    }
+
+    // MARK: - Column Management
+
+    private func addColumn(name: String, icon: String) {
+        // Find position before the "Completed" column (system column)
+        // If no system column, add at the end
+        let systemColumnPosition = columns.first(where: { $0.isSystem })?.position ?? columns.count
+        let newPosition = systemColumnPosition
+
+        // Shift system column(s) to make room
+        for column in columns where column.position >= newPosition {
+            column.position += 1
+        }
+
+        let newColumn = BoardColumn(name: name, icon: icon, position: newPosition, isSystem: false)
+        context.insert(newColumn)
+    }
+
+    private func deleteColumn(_ column: BoardColumn) {
+        guard !column.isSystem else { return }
+
+        // Move tasks from deleted column to the first available column
+        if let fallbackColumn = columns.first(where: { !$0.isSystem && $0.id != column.id }) {
+            let columnTasks = tasks.filter { $0.columnId == column.id }
+            let maxPosition = tasks.filter { $0.columnId == fallbackColumn.id }.map(\.position).max() ?? -1
+
+            for (index, task) in columnTasks.enumerated() {
+                task.columnId = fallbackColumn.id
+                task.position = maxPosition + 1 + index
+            }
+        }
+
+        // Adjust positions of remaining columns
+        let deletedPosition = column.position
+        for col in columns where col.position > deletedPosition {
+            col.position -= 1
+        }
+
+        context.delete(column)
+    }
+
+    private func moveColumn(_ column: BoardColumn, direction: Int) {
+        guard !column.isSystem else { return }
+
+        let newPosition = column.position + direction
+        guard newPosition >= 0 && newPosition < columns.count else { return }
+
+        // Find the column at the target position
+        guard let targetColumn = columns.first(where: { $0.position == newPosition }) else { return }
+
+        // Don't allow moving past the system column
+        if targetColumn.isSystem { return }
+
+        // Swap positions
+        let tempPosition = column.position
+        column.position = targetColumn.position
+        targetColumn.position = tempPosition
+    }
+
+    private func canMoveColumn(_ column: BoardColumn, direction: Int) -> Bool {
+        guard !column.isSystem else { return false }
+
+        let newPosition = column.position + direction
+        guard newPosition >= 0 && newPosition < columns.count else { return false }
+
+        // Check if target position has a system column
+        if let targetColumn = columns.first(where: { $0.position == newPosition }) {
+            return !targetColumn.isSystem
+        }
+
+        return true
     }
 
     // MARK: - Task Sorting & Filtering
