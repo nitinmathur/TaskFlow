@@ -34,6 +34,8 @@ final class TodoTask {
     var createdAt: Date = Date()
     var completedAt: Date?
     var checklistData: Data?
+    var isArchived: Bool = false
+    var columnId: UUID?
 
     var column: Column {
         get { Column(rawValue: columnRaw) ?? .work }
