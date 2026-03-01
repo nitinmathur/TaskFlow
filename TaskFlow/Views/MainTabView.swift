@@ -42,6 +42,8 @@ struct MainTabView: View {
         }
         .frame(minWidth: 900, minHeight: 500)
         .onAppear {
+            // Run column migration on first launch (creates default columns)
+            ColumnMigration.migrateIfNeeded(context: context)
             syncManager.checkForRemoteChanges()
         }
         // Track data changes using computed hash

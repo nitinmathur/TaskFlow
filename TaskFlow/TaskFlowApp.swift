@@ -5,7 +5,7 @@ import SQLite3
 @main
 struct TaskFlowApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([TodoTask.self, Note.self])
+        let schema = Schema([TodoTask.self, Note.self, BoardColumn.self])
 
         // Store in iCloud Drive folder for sync (no entitlements needed)
         let home = FileManager.default.homeDirectoryForCurrentUser
