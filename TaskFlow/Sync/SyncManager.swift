@@ -32,6 +32,8 @@ struct SyncableTask: Codable {
         var createdAt: Date
         var completedAt: Date?
         var checklist: [ChecklistItem]
+        var isArchived: Bool
+        var columnId: UUID?
     }
 
     // Memberwise init for migration and tombstones
@@ -58,7 +60,9 @@ struct SyncableTask: Codable {
             isCompleted: task.isCompleted,
             createdAt: task.createdAt,
             completedAt: task.completedAt,
-            checklist: task.checklist
+            checklist: task.checklist,
+            isArchived: task.isArchived,
+            columnId: task.columnId
         )
     }
 
@@ -78,6 +82,8 @@ struct SyncableTask: Codable {
         task.isCompleted = data.isCompleted
         task.completedAt = data.completedAt
         task.checklist = data.checklist
+        task.isArchived = data.isArchived
+        task.columnId = data.columnId
     }
 }
 
@@ -218,7 +224,9 @@ private struct LegacySyncableTask: Codable {
                 isCompleted: isCompleted,
                 createdAt: createdAt,
                 completedAt: completedAt,
-                checklist: checklist
+                checklist: checklist,
+                isArchived: false,
+                columnId: nil
             )
         )
     }
