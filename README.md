@@ -20,6 +20,8 @@ A native macOS Kanban-style task manager with Notes, built with SwiftUI and Swif
 ### Notes Tab
 - **Markdown Support**: Bold, italic, code, links, lists, checkboxes, quotes
 - **Formatting Toolbar**: Quick insert buttons for markdown
+- **Keyboard Shortcuts**: Cmd+B (bold), Cmd+I (italic), Cmd+K (link), etc.
+- **Live Markdown Rendering**: Syntax highlighting while editing
 - **Preview/Edit Modes**: View rendered markdown or edit raw text
 - **Sorting**: Manual (default), Last Updated, Date Created, Title
 - **Auto-save**: Changes saved with debounce
@@ -107,21 +109,30 @@ TaskFlow/
 ├── TaskFlowApp.swift           # App entry, SwiftData setup
 ├── Models/
 │   ├── Column.swift            # Kanban columns enum
+│   ├── BoardColumn.swift       # Board column persistence
 │   ├── TodoTask.swift          # Task model + checklist
 │   └── Note.swift              # Note model
 ├── Views/
 │   ├── MainTabView.swift       # Tab container
+│   ├── SyncToolbarView.swift   # Sync status indicator
 │   ├── Kanban/
 │   │   ├── KanbanBoardView.swift
 │   │   ├── KanbanColumnView.swift
 │   │   ├── KanbanCardView.swift
 │   │   ├── CardDetailView.swift
-│   │   └── CardEditorView.swift
+│   │   ├── CardEditorView.swift
+│   │   ├── ColumnHeaderView.swift
+│   │   └── ArchiveView.swift
 │   └── Notes/
 │       ├── NotesSplitView.swift
 │       ├── NoteEditorView.swift
+│       ├── MarkdownTextStorage.swift
+│       ├── MarkdownRenderer.swift
 │       ├── MarkdownComponents.swift
-│       └── MarkdownRenderer.swift
+│       └── FolderManagerView.swift
+├── Sync/
+│   ├── SyncManager.swift       # iCloud Drive sync
+│   └── ColumnMigration.swift   # Data migration
 ├── project.yml                 # XcodeGen config
 └── docs/
     └── PROJECT.md              # Full documentation
