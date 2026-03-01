@@ -36,6 +36,7 @@ final class TodoTask {
     var checklistData: Data?
     var isArchived: Bool = false
     var columnId: UUID?
+    var syncVersion: Int = 1
 
     var column: Column {
         get { Column(rawValue: columnRaw) ?? .work }

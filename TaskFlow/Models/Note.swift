@@ -10,6 +10,7 @@ final class Note {
     var folderName: String = "All Notes"
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
+    var syncVersion: Int = 1
 
     init(title: String = "Untitled", body: String = "", position: Int = 0, folderName: String = "All Notes") {
         self.id = UUID()

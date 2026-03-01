@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		23B19A5692E54F65A10FC743 /* BoardColumn.swift in Sources */ = {isa = PBXBuildFile; fileRef = B15568CC49CA48B991F65837 /* BoardColumn.swift */; };
+		B06677796ACE41C1B8E07F49 /* ColumnMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9BAA017AFDC41BFAA71FC3E /* ColumnMigration.swift */; };
+		7C9CF354FD5F43B29A022D5C /* ColumnHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38040D4957F249D1B247C249 /* ColumnHeaderView.swift */; };
+		8194D5655D3445C0B974ED00 /* ArchiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AC2DC77203443008589C98C /* ArchiveView.swift */; };
+		7CBA5D6884D14F979E814285 /* MarkdownTextStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 574A24DBF43E48ACB2E04E03 /* MarkdownTextStorage.swift */; };
 		043609B05E17CCE203317A19 /* CardEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 417C409E6EF3154E39C515C1 /* CardEditorView.swift */; };
 		52E58AE6B8E842B3004A0AA4 /* NoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5411D2FAA8D5370CAF20C6D /* NoteEditorView.swift */; };
 		54FB6D4B4502B4BE430F4929 /* Column.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36E4FC1F06B7956AD415A721 /* Column.swift */; };
@@ -27,6 +32,11 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		B15568CC49CA48B991F65837 /* BoardColumn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardColumn.swift; sourceTree = "<group>"; };
+		D9BAA017AFDC41BFAA71FC3E /* ColumnMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColumnMigration.swift; sourceTree = "<group>"; };
+		38040D4957F249D1B247C249 /* ColumnHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColumnHeaderView.swift; sourceTree = "<group>"; };
+		2AC2DC77203443008589C98C /* ArchiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveView.swift; sourceTree = "<group>"; };
+		574A24DBF43E48ACB2E04E03 /* MarkdownTextStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownTextStorage.swift; sourceTree = "<group>"; };
 		09AE62E98FA111629360AB0D /* TaskFlow.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TaskFlow.entitlements; sourceTree = "<group>"; };
 		0A42D93EA3A5811C081F459C /* KanbanColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KanbanColumnView.swift; sourceTree = "<group>"; };
 		0F201481474E2100B187F355 /* KanbanCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KanbanCardView.swift; sourceTree = "<group>"; };
@@ -52,7 +62,8 @@
 		18417A05AFCC69AFF9DCEF7D /* Notes */ = {
 			isa = PBXGroup;
 			children = (
-				5DEFEA7297AEA6E49D0687F3 /* FolderManagerView.swift */,
+								574A24DBF43E48ACB2E04E03 /* MarkdownTextStorage.swift */,
+5DEFEA7297AEA6E49D0687F3 /* FolderManagerView.swift */,
 				D6737341692B3F395292568E /* MarkdownComponents.swift */,
 				C7EC39357B3D45F9B16DE970 /* MarkdownRenderer.swift */,
 				D5411D2FAA8D5370CAF20C6D /* NoteEditorView.swift */,
@@ -84,7 +95,8 @@
 		59B704315E475A3BD885A717 /* Sync */ = {
 			isa = PBXGroup;
 			children = (
-				561FB3213C322A2E70822E54 /* SyncManager.swift */,
+								D9BAA017AFDC41BFAA71FC3E /* ColumnMigration.swift */,
+561FB3213C322A2E70822E54 /* SyncManager.swift */,
 			);
 			path = Sync;
 			sourceTree = "<group>";
@@ -92,7 +104,8 @@
 		5A70153EA0B07D525EC993FE /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				36E4FC1F06B7956AD415A721 /* Column.swift */,
+								B15568CC49CA48B991F65837 /* BoardColumn.swift */,
+36E4FC1F06B7956AD415A721 /* Column.swift */,
 				F6787EA1FC86B99BF59F1068 /* Note.swift */,
 				183E4E86AE12FC7E8D054CF7 /* TodoTask.swift */,
 			);
@@ -113,7 +126,9 @@
 		BB84C5C0DF32549F09057C06 /* Kanban */ = {
 			isa = PBXGroup;
 			children = (
-				5A1779725FFA4245A2EEAA28 /* CardDetailView.swift */,
+												2AC2DC77203443008589C98C /* ArchiveView.swift */,
+38040D4957F249D1B247C249 /* ColumnHeaderView.swift */,
+5A1779725FFA4245A2EEAA28 /* CardDetailView.swift */,
 				417C409E6EF3154E39C515C1 /* CardEditorView.swift */,
 				BFA18650967175E6497E7065 /* KanbanBoardView.swift */,
 				0F201481474E2100B187F355 /* KanbanCardView.swift */,
@@ -189,7 +204,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BFDAF6EF14D7C7F0C9FD8383 /* CardDetailView.swift in Sources */,
+								23B19A5692E54F65A10FC743 /* BoardColumn.swift in Sources */,
+				B06677796ACE41C1B8E07F49 /* ColumnMigration.swift in Sources */,
+				7C9CF354FD5F43B29A022D5C /* ColumnHeaderView.swift in Sources */,
+				8194D5655D3445C0B974ED00 /* ArchiveView.swift in Sources */,
+				7CBA5D6884D14F979E814285 /* MarkdownTextStorage.swift in Sources */,
+BFDAF6EF14D7C7F0C9FD8383 /* CardDetailView.swift in Sources */,
 				043609B05E17CCE203317A19 /* CardEditorView.swift in Sources */,
 				54FB6D4B4502B4BE430F4929 /* Column.swift in Sources */,
 				B5B55BC0C99AD34FEA8EBCBB /* FolderManagerView.swift in Sources */,
