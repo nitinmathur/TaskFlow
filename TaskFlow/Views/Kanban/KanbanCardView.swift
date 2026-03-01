@@ -115,6 +115,11 @@ struct KanbanCardView: View {
         .contextMenu {
             Button("View Details") { onTap() }
             Divider()
+            Button {
+                task.isArchived = true
+            } label: {
+                Label("Archive", systemImage: "archivebox")
+            }
             Button("Delete", role: .destructive) { context.delete(task) }
         }
     }

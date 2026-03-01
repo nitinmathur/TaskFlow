@@ -5,6 +5,7 @@ struct CardDetailView: View {
     @Bindable var task: TodoTask
     let onEdit: () -> Void
     let onDelete: () -> Void
+    var onArchive: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \BoardColumn.position) private var columns: [BoardColumn]
 
@@ -152,6 +153,17 @@ struct CardDetailView: View {
                 } label: {
                     Label("Delete", systemImage: "trash")
                 }
+
+                if let onArchive = onArchive {
+                    Button {
+                        onArchive()
+                        dismiss()
+                    } label: {
+                        Label("Archive", systemImage: "archivebox")
+                    }
+                    .buttonStyle(.bordered)
+                }
+
                 Spacer()
                 Button {
                     dismiss()

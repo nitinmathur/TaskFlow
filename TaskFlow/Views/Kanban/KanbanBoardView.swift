@@ -29,6 +29,11 @@ struct KanbanBoardView: View {
     @State private var groupByDate = false
     @State private var sortOption: SortOption = .manual
     @State private var showAddColumnPopover = false
+    @State private var showArchive = false
+
+    private var archivedTasksCount: Int {
+        tasks.filter { $0.isArchived }.count
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -42,6 +47,27 @@ struct KanbanBoardView: View {
                     }
                     .labelsHidden()
                     .frame(width: 110)
+                }
+
+                // Archive button
+                Button {
+                    showArchive = true
+                } label: {
+                    Label("Archive", systemImage: "archivebox")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .overlay(alignment: .topTrailing) {
+                    if archivedTasksCount > 0 {
+                        Text("\(archivedTasksCount)")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.secondary)
+                            .clipShape(Capsule())
+                            .offset(x: 8, y: -8)
+                    }
                 }
 
                 Spacer()
@@ -101,8 +127,12 @@ struct KanbanBoardView: View {
                         editorConfig = CardEditorConfig(task: config.task, column: firstColumn)
                     }
                 },
-                onDelete: { context.delete(config.task) }
+                onDelete: { context.delete(config.task) },
+                onArchive: { config.task.isArchived = true }
             )
+        }
+        .sheet(isPresented: $showArchive) {
+            ArchiveView()
         }
     }
 
