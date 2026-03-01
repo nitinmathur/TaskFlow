@@ -45,6 +45,7 @@ struct NoteEditorView: View {
 struct EditModeView: View {
     @Bindable var note: Note
     let onSave: () -> Void
+    @StateObject private var textViewCoordinator = TextViewCoordinator()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -56,9 +57,9 @@ struct EditModeView: View {
                 .background(Color(nsColor: .controlBackgroundColor))
 
             Divider()
-            FormattingToolbar(text: $note.body)
+            FormattingToolbar(text: $note.body, coordinator: textViewCoordinator)
             Divider()
-            MarkdownTextEditor(text: $note.body)
+            MarkdownTextEditor(text: $note.body, coordinator: textViewCoordinator)
                 .padding()
         }
         .onChange(of: note.title) { _, _ in onSave() }
