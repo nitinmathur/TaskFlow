@@ -8,6 +8,8 @@ struct FolderManagerView: View {
     @State private var newFolderName = ""
     @State private var editingFolder: String?
     @State private var editName = ""
+    @State private var showDeleteAlert = false
+    @State private var folderToDelete: String?
 
     @AppStorage("customFolders") private var customFoldersData: Data = Data()
 
@@ -50,6 +52,9 @@ struct FolderManagerView: View {
 
             List {
                 ForEach(folders, id: \.self) { folder in
+                    let count = noteCount(for: folder)
+                    let canDelete = folder != "All Notes" && count == 0
+
                     HStack {
                         if editingFolder == folder {
                             TextField("Folder name", text: $editName)
@@ -63,9 +68,27 @@ struct FolderManagerView: View {
                             }
                             .buttonStyle(.borderless)
                         } else {
+                            Image(systemName: folder == "All Notes" ? "tray.full" : "folder")
+                                .foregroundStyle(folder == "All Notes" ? .blue : .secondary)
                             Text(folder)
                             Spacer()
-                            Text("\(noteCount(for: folder))").foregroundStyle(.secondary)
+                            Text("\(count)").foregroundStyle(.secondary)
+                            if folder != "All Notes" {
+                                Button {
+                                    if canDelete {
+                                        deleteFolder(folder)
+                                    } else {
+                                        folderToDelete = folder
+                                        showDeleteAlert = true
+                                    }
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .font(.caption)
+                                        .foregroundStyle(canDelete ? .red : .secondary.opacity(0.5))
+                                }
+                                .buttonStyle(.plain)
+                                .help(canDelete ? "Delete empty folder" : "Has notes - cannot delete")
+                            }
                         }
                     }
                     .contextMenu {
@@ -75,8 +98,14 @@ struct FolderManagerView: View {
                                 editName = folder
                             }
                             Button("Delete", role: .destructive) {
-                                deleteFolder(folder)
+                                if count > 0 {
+                                    folderToDelete = folder
+                                    showDeleteAlert = true
+                                } else {
+                                    deleteFolder(folder)
+                                }
                             }
+                            .disabled(count > 0)
                         }
                     }
                 }
@@ -92,6 +121,13 @@ struct FolderManagerView: View {
             }.padding()
         }
         .frame(width: 300, height: 400)
+        .alert("Cannot Delete Folder", isPresented: $showDeleteAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            if let folder = folderToDelete {
+                Text("'\(folder)' contains \(noteCount(for: folder)) note(s). Move or delete the notes first.")
+            }
+        }
     }
 
     private func addFolder() {
@@ -110,11 +146,8 @@ struct FolderManagerView: View {
     }
 
     private func deleteFolder(_ folder: String) {
-        let count = noteCount(for: folder)
-        if count > 0 {
-            // Can't delete folder with notes - move notes to All Notes first
-            return
-        }
+        // Only delete empty folders
+        guard noteCount(for: folder) == 0 else { return }
 
         // Remove from custom folders
         var updated = customFolders

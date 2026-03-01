@@ -277,8 +277,8 @@ class SyncManager: ObservableObject {
     private var fileWatcher: DispatchSourceFileSystemObject?
     private var timer: Timer?
     private var lastLocalChange: Date?
-    private let pushDebounce: TimeInterval = 10  // 10 seconds (reduced from 60)
-    private let pullDelay: TimeInterval = 5      // 5 seconds (reduced from 10)
+    private let pushDebounce: TimeInterval = 3   // 3 seconds - push quickly after changes stop
+    private let pullDelay: TimeInterval = 2      // 2 seconds - pull quickly when remote changes detected
     private var pullCountdownDate: Date?
 
     init() {
@@ -350,8 +350,11 @@ class SyncManager: ObservableObject {
     // MARK: - Auto-Sync Timer
 
     private func startAutoSync() {
-        let timer = Timer(timeInterval: 15, repeats: true) { [weak self] _ in
+        // Poll every 5 seconds for both local and remote changes
+        let timer = Timer(timeInterval: 5, repeats: true) { [weak self] _ in
             Task { @MainActor in
+                // Always check for remote changes (iCloud file watcher is unreliable)
+                self?.checkForRemoteChanges()
                 self?.checkAndSync()
             }
         }
@@ -451,32 +454,16 @@ class SyncManager: ObservableObject {
         var changes = 0
         let fm = FileManager.default
 
-        if let taskFiles = try? fm.contentsOfDirectory(at: tasksURL, includingPropertiesForKeys: [.contentModificationDateKey]) {
-            for file in taskFiles where file.pathExtension == "json" {
-                if let modDate = try? file.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
-                   let lastSync = lastSyncTime,
-                   modDate > lastSync {
-                    changes += 1
-                }
-            }
-        }
+        // Use a reference time - if no last sync, use 1 hour ago to catch recent changes
+        let referenceTime = lastSyncTime ?? Date().addingTimeInterval(-3600)
 
-        if let noteFiles = try? fm.contentsOfDirectory(at: notesURL, includingPropertiesForKeys: [.contentModificationDateKey]) {
-            for file in noteFiles where file.pathExtension == "json" {
-                if let modDate = try? file.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
-                   let lastSync = lastSyncTime,
-                   modDate > lastSync {
-                    changes += 1
-                }
-            }
-        }
-
-        if let columnFiles = try? fm.contentsOfDirectory(at: columnsURL, includingPropertiesForKeys: [.contentModificationDateKey]) {
-            for file in columnFiles where file.pathExtension == "json" {
-                if let modDate = try? file.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
-                   let lastSync = lastSyncTime,
-                   modDate > lastSync {
-                    changes += 1
+        for url in [tasksURL, notesURL, columnsURL] {
+            if let files = try? fm.contentsOfDirectory(at: url, includingPropertiesForKeys: [.contentModificationDateKey]) {
+                for file in files where file.pathExtension == "json" {
+                    if let modDate = try? file.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
+                       modDate > referenceTime {
+                        changes += 1
+                    }
                 }
             }
         }

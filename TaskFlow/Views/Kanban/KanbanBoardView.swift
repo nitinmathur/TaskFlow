@@ -185,15 +185,10 @@ struct KanbanBoardView: View {
     private func deleteColumn(_ column: BoardColumn) {
         guard !column.isSystem else { return }
 
-        // Move tasks from deleted column to the first available column
-        if let fallbackColumn = columns.first(where: { !$0.isSystem && $0.id != column.id }) {
-            let columnTasks = tasks.filter { $0.columnId == column.id }
-            let maxPosition = tasks.filter { $0.columnId == fallbackColumn.id }.map(\.position).max() ?? -1
-
-            for (index, task) in columnTasks.enumerated() {
-                task.columnId = fallbackColumn.id
-                task.position = maxPosition + 1 + index
-            }
+        // Archive all tasks from this column (instead of moving to another column)
+        let columnTasks = tasks.filter { $0.columnId == column.id && !$0.isArchived }
+        for task in columnTasks {
+            task.isArchived = true
         }
 
         // Adjust positions of remaining columns

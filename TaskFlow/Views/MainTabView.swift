@@ -9,6 +9,7 @@ struct MainTabView: View {
     @Environment(\.modelContext) private var context
     @Query private var tasks: [TodoTask]
     @Query private var notes: [Note]
+    @Query private var columns: [BoardColumn]
     @State private var selectedTab: AppTab = .tasks
     @StateObject private var syncManager = SyncManager()
 
@@ -47,11 +48,8 @@ struct MainTabView: View {
             syncManager.checkForRemoteChanges()
         }
         // Track data changes using computed hash
-        .onChange(of: tasksHash) { _, newHash in
-            syncManager.updateTrackedData(tasksHash: newHash, notesHash: notesHash)
-        }
-        .onChange(of: notesHash) { _, newHash in
-            syncManager.updateTrackedData(tasksHash: tasksHash, notesHash: newHash)
+        .onChange(of: dataHash) { _, _ in
+            syncManager.markLocalChange()
         }
         .onChange(of: syncManager.status) { _, newStatus in
             if newStatus == .syncing {
@@ -66,9 +64,10 @@ struct MainTabView: View {
         }
     }
 
-    // Computed properties for tracking changes
-    private var tasksHash: Int {
+    // Combined hash for all data changes
+    private var dataHash: Int {
         var hasher = Hasher()
+        // Tasks
         for task in tasks {
             hasher.combine(task.id)
             hasher.combine(task.title)
@@ -77,19 +76,24 @@ struct MainTabView: View {
             hasher.combine(task.priority.rawValue)
             hasher.combine(task.position)
             hasher.combine(task.isCompleted)
+            hasher.combine(task.isArchived)
             hasher.combine(task.checklist.count)
         }
-        return hasher.finalize()
-    }
-
-    private var notesHash: Int {
-        var hasher = Hasher()
+        // Notes
         for note in notes {
             hasher.combine(note.id)
             hasher.combine(note.title)
             hasher.combine(note.body)
             hasher.combine(note.position)
             hasher.combine(note.folderName)
+        }
+        // Columns
+        for column in columns {
+            hasher.combine(column.id)
+            hasher.combine(column.name)
+            hasher.combine(column.icon)
+            hasher.combine(column.position)
+            hasher.combine(column.isSystem)
         }
         return hasher.finalize()
     }
@@ -98,6 +102,7 @@ struct MainTabView: View {
         do {
             try syncManager.pushTasks(tasks)
             try syncManager.pushNotes(notes)
+            try syncManager.pushColumns(columns)
         } catch {
             print("Push error: \(error)")
         }
@@ -107,6 +112,7 @@ struct MainTabView: View {
         do {
             _ = try syncManager.pullTasks(context: context, localTasks: tasks)
             _ = try syncManager.pullNotes(context: context, localNotes: notes)
+            _ = try syncManager.pullColumns(context: context, localColumns: columns)
         } catch {
             print("Pull error: \(error)")
         }

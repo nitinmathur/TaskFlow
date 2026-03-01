@@ -34,6 +34,11 @@ struct TaskFlowApp: App {
 
             return container
         } catch {
+            print("ModelContainer Error: \(error)")
+            print("Error Description: \(error.localizedDescription)")
+            if let swiftDataError = error as? SwiftData.SwiftDataError {
+                print("SwiftData Error: \(swiftDataError)")
+            }
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()

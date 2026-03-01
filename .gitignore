@@ -1,0 +1,41 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserdata
+xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcworkspace/contents.xcworkspacedata
+*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# SwiftPM
+.build/
+Packages/
+Package.resolved
+.swiftpm/
+
+# CocoaPods (if used)
+Pods/
+
+# Archives
+*.xcarchive
+
+# Provisioning profiles
+*.mobileprovision
+
+# Crash logs
+*.crash
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# App data (local database)
+*.store
+*.store-shm
+*.store-wal
