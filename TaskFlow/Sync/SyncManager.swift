@@ -16,6 +16,180 @@ enum SyncStatus: Equatable {
 
 struct SyncableTask: Codable {
     var id: UUID
+    var version: Int
+    var isDeleted: Bool
+    var deletedAt: Date?
+    var data: TaskData?
+
+    struct TaskData: Codable {
+        var title: String
+        var taskDescription: String?
+        var column: String
+        var priority: Int
+        var position: Int
+        var dueDate: Date?
+        var isCompleted: Bool
+        var createdAt: Date
+        var completedAt: Date?
+        var checklist: [ChecklistItem]
+    }
+
+    // Memberwise init for migration and tombstones
+    init(id: UUID, version: Int, isDeleted: Bool, deletedAt: Date?, data: TaskData?) {
+        self.id = id
+        self.version = version
+        self.isDeleted = isDeleted
+        self.deletedAt = deletedAt
+        self.data = data
+    }
+
+    init(from task: TodoTask, version: Int) {
+        self.id = task.id
+        self.version = version
+        self.isDeleted = false
+        self.deletedAt = nil
+        self.data = TaskData(
+            title: task.title,
+            taskDescription: task.taskDescription,
+            column: task.columnRaw,
+            priority: task.priorityRaw,
+            position: task.position,
+            dueDate: task.dueDate,
+            isCompleted: task.isCompleted,
+            createdAt: task.createdAt,
+            completedAt: task.completedAt,
+            checklist: task.checklist
+        )
+    }
+
+    // Tombstone constructor for deleted items
+    static func tombstone(id: UUID, version: Int) -> SyncableTask {
+        SyncableTask(id: id, version: version, isDeleted: true, deletedAt: Date(), data: nil)
+    }
+
+    func apply(to task: TodoTask) {
+        guard let data = data else { return }
+        task.title = data.title
+        task.taskDescription = data.taskDescription
+        task.columnRaw = data.column
+        task.priorityRaw = data.priority
+        task.position = data.position
+        task.dueDate = data.dueDate
+        task.isCompleted = data.isCompleted
+        task.completedAt = data.completedAt
+        task.checklist = data.checklist
+    }
+}
+
+struct SyncableNote: Codable {
+    var id: UUID
+    var version: Int
+    var isDeleted: Bool
+    var deletedAt: Date?
+    var data: NoteData?
+
+    struct NoteData: Codable {
+        var title: String
+        var body: String
+        var position: Int
+        var folderName: String
+        var createdAt: Date
+        var updatedAt: Date
+    }
+
+    // Memberwise init for migration and tombstones
+    init(id: UUID, version: Int, isDeleted: Bool, deletedAt: Date?, data: NoteData?) {
+        self.id = id
+        self.version = version
+        self.isDeleted = isDeleted
+        self.deletedAt = deletedAt
+        self.data = data
+    }
+
+    init(from note: Note, version: Int) {
+        self.id = note.id
+        self.version = version
+        self.isDeleted = false
+        self.deletedAt = nil
+        self.data = NoteData(
+            title: note.title,
+            body: note.body,
+            position: note.position,
+            folderName: note.folderName,
+            createdAt: note.createdAt,
+            updatedAt: note.updatedAt
+        )
+    }
+
+    // Tombstone constructor for deleted items
+    static func tombstone(id: UUID, version: Int) -> SyncableNote {
+        SyncableNote(id: id, version: version, isDeleted: true, deletedAt: Date(), data: nil)
+    }
+
+    func apply(to note: Note) {
+        guard let data = data else { return }
+        note.title = data.title
+        note.body = data.body
+        note.position = data.position
+        note.folderName = data.folderName
+        note.updatedAt = data.updatedAt
+    }
+}
+
+struct SyncableBoardColumn: Codable {
+    var id: UUID
+    var version: Int
+    var isDeleted: Bool
+    var deletedAt: Date?
+    var data: ColumnData?
+
+    struct ColumnData: Codable {
+        var name: String
+        var icon: String
+        var position: Int
+        var isSystem: Bool
+    }
+
+    // Memberwise init for migration and tombstones
+    init(id: UUID, version: Int, isDeleted: Bool, deletedAt: Date?, data: ColumnData?) {
+        self.id = id
+        self.version = version
+        self.isDeleted = isDeleted
+        self.deletedAt = deletedAt
+        self.data = data
+    }
+
+    init(from column: BoardColumn, version: Int) {
+        self.id = column.id
+        self.version = version
+        self.isDeleted = false
+        self.deletedAt = nil
+        self.data = ColumnData(
+            name: column.name,
+            icon: column.icon,
+            position: column.position,
+            isSystem: column.isSystem
+        )
+    }
+
+    // Tombstone constructor for deleted items
+    static func tombstone(id: UUID, version: Int) -> SyncableBoardColumn {
+        SyncableBoardColumn(id: id, version: version, isDeleted: true, deletedAt: Date(), data: nil)
+    }
+
+    func apply(to column: BoardColumn) {
+        guard let data = data else { return }
+        column.name = data.name
+        column.icon = data.icon
+        column.position = data.position
+        column.isSystem = data.isSystem
+    }
+}
+
+// MARK: - Legacy Format Support (for migration)
+
+private struct LegacySyncableTask: Codable {
+    var id: UUID
     var title: String
     var taskDescription: String?
     var column: String
@@ -26,37 +200,31 @@ struct SyncableTask: Codable {
     var createdAt: Date
     var completedAt: Date?
     var checklist: [ChecklistItem]
-    var modifiedAt: Date  // Track when last modified
+    var modifiedAt: Date
 
-    init(from task: TodoTask) {
-        self.id = task.id
-        self.title = task.title
-        self.taskDescription = task.taskDescription
-        self.column = task.columnRaw
-        self.priority = task.priorityRaw
-        self.position = task.position
-        self.dueDate = task.dueDate
-        self.isCompleted = task.isCompleted
-        self.createdAt = task.createdAt
-        self.completedAt = task.completedAt
-        self.checklist = task.checklist
-        self.modifiedAt = Date()
-    }
-
-    func apply(to task: TodoTask) {
-        task.title = title
-        task.taskDescription = taskDescription
-        task.columnRaw = column
-        task.priorityRaw = priority
-        task.position = position
-        task.dueDate = dueDate
-        task.isCompleted = isCompleted
-        task.completedAt = completedAt
-        task.checklist = checklist
+    func toNew() -> SyncableTask {
+        SyncableTask(
+            id: id,
+            version: 1,
+            isDeleted: false,
+            deletedAt: nil,
+            data: SyncableTask.TaskData(
+                title: title,
+                taskDescription: taskDescription,
+                column: column,
+                priority: priority,
+                position: position,
+                dueDate: dueDate,
+                isCompleted: isCompleted,
+                createdAt: createdAt,
+                completedAt: completedAt,
+                checklist: checklist
+            )
+        )
     }
 }
 
-struct SyncableNote: Codable {
+private struct LegacySyncableNote: Codable {
     var id: UUID
     var title: String
     var body: String
@@ -66,23 +234,21 @@ struct SyncableNote: Codable {
     var updatedAt: Date
     var modifiedAt: Date
 
-    init(from note: Note) {
-        self.id = note.id
-        self.title = note.title
-        self.body = note.body
-        self.position = note.position
-        self.folderName = note.folderName
-        self.createdAt = note.createdAt
-        self.updatedAt = note.updatedAt
-        self.modifiedAt = Date()
-    }
-
-    func apply(to note: Note) {
-        note.title = title
-        note.body = body
-        note.position = position
-        note.folderName = folderName
-        note.updatedAt = updatedAt
+    func toNew() -> SyncableNote {
+        SyncableNote(
+            id: id,
+            version: 1,
+            isDeleted: false,
+            deletedAt: nil,
+            data: SyncableNote.NoteData(
+                title: title,
+                body: body,
+                position: position,
+                folderName: folderName,
+                createdAt: createdAt,
+                updatedAt: updatedAt
+            )
+        )
     }
 }
 
@@ -99,6 +265,7 @@ class SyncManager: ObservableObject {
     private let sharedURL: URL
     private let tasksURL: URL
     private let notesURL: URL
+    private let columnsURL: URL
     private var fileWatcher: DispatchSourceFileSystemObject?
     private var timer: Timer?
     private var lastLocalChange: Date?
@@ -119,8 +286,10 @@ class SyncManager: ObservableObject {
 
         tasksURL = sharedURL.appendingPathComponent("tasks")
         notesURL = sharedURL.appendingPathComponent("notes")
+        columnsURL = sharedURL.appendingPathComponent("columns")
 
         setupDirectories()
+        purgeOldTombstones()  // Clean up tombstones > 7 days old
         startFileWatcher()
         startAutoSync()
     }
@@ -133,6 +302,41 @@ class SyncManager: ObservableObject {
     private func setupDirectories() {
         try? FileManager.default.createDirectory(at: tasksURL, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: notesURL, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: columnsURL, withIntermediateDirectories: true)
+    }
+
+    // MARK: - Tombstone Cleanup
+
+    func purgeOldTombstones() {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let cutoff = Date().addingTimeInterval(-7 * 24 * 60 * 60) // 7 days ago
+
+        for url in [tasksURL, notesURL, columnsURL] {
+            guard let files = try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil) else { continue }
+
+            for file in files where file.pathExtension == "json" {
+                guard let data = try? Data(contentsOf: file) else { continue }
+
+                // Try to decode as task, note, or column and check if it's an old tombstone
+                if let task = try? decoder.decode(SyncableTask.self, from: data),
+                   task.isDeleted,
+                   let deletedAt = task.deletedAt,
+                   deletedAt < cutoff {
+                    try? FileManager.default.removeItem(at: file)
+                } else if let note = try? decoder.decode(SyncableNote.self, from: data),
+                          note.isDeleted,
+                          let deletedAt = note.deletedAt,
+                          deletedAt < cutoff {
+                    try? FileManager.default.removeItem(at: file)
+                } else if let column = try? decoder.decode(SyncableBoardColumn.self, from: data),
+                          column.isDeleted,
+                          let deletedAt = column.deletedAt,
+                          deletedAt < cutoff {
+                    try? FileManager.default.removeItem(at: file)
+                }
+            }
+        }
     }
 
     // MARK: - Auto-Sync Timer
@@ -149,54 +353,21 @@ class SyncManager: ObservableObject {
 
     // Status changes detected here trigger actual sync in MainTabView's .onChange(of: syncManager.status)
     // When .syncing is set, MainTabView calls pushTasks/pushNotes or pullTasks/pullNotes
+    // Version vectors handle conflicts automatically - higher version wins
     private func checkAndSync() {
-        let isAhead = detectLocalAhead()
-        let isBehind = detectRemoteBehind()
-
-        if isAhead && !isBehind {
+        // Only auto-push when local changes exist and debounce period has passed
+        if detectLocalAhead() {
             handleLocalAhead()
-        } else if isBehind && !isAhead {
+        } else if pendingRemoteChanges > 0 {
+            // Remote changes detected by file watcher
             handleRemoteBehind()
-        } else if isAhead && isBehind {
-            status = .conflict
-        } else if !isAhead && !isBehind {
+        } else if status != .syncing {
             status = .inSync
         }
     }
 
     public func detectLocalAhead() -> Bool {
         return lastLocalChange != nil
-    }
-
-    private func detectRemoteBehind() -> Bool {
-        // If we've never synced, don't assume remote is behind
-        // Wait for user to manually push or pull
-        guard let lastSync = lastSyncTime else { return false }
-
-        let fm = FileManager.default
-        var hasNewer = false
-
-        if let files = try? fm.contentsOfDirectory(at: tasksURL, includingPropertiesForKeys: [.contentModificationDateKey]) {
-            for file in files where file.pathExtension == "json" {
-                if let modDate = try? file.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
-                   modDate > lastSync {
-                    hasNewer = true
-                    break
-                }
-            }
-        }
-
-        if !hasNewer, let files = try? fm.contentsOfDirectory(at: notesURL, includingPropertiesForKeys: [.contentModificationDateKey]) {
-            for file in files where file.pathExtension == "json" {
-                if let modDate = try? file.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
-                   modDate > lastSync {
-                    hasNewer = true
-                    break
-                }
-            }
-        }
-
-        return hasNewer
     }
 
     private func handleLocalAhead() {
@@ -292,6 +463,16 @@ class SyncManager: ObservableObject {
             }
         }
 
+        if let columnFiles = try? fm.contentsOfDirectory(at: columnsURL, includingPropertiesForKeys: [.contentModificationDateKey]) {
+            for file in columnFiles where file.pathExtension == "json" {
+                if let modDate = try? file.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
+                   let lastSync = lastSyncTime,
+                   modDate > lastSync {
+                    changes += 1
+                }
+            }
+        }
+
         pendingRemoteChanges = changes
         if changes > 0 && status == .inSync {
             status = .remoteChanges
@@ -306,21 +487,36 @@ class SyncManager: ObservableObject {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = .prettyPrinted
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
 
+        let localIDs = Set(tasks.map { $0.id })
+
+        // 1. Push all local tasks (increment version)
         for task in tasks {
-            let syncable = SyncableTask(from: task)
+            task.syncVersion += 1
+            let syncable = SyncableTask(from: task, version: task.syncVersion)
             let data = try encoder.encode(syncable)
             let fileURL = tasksURL.appendingPathComponent("\(task.id.uuidString).json")
             try data.write(to: fileURL)
         }
 
-        // Remove deleted tasks
-        let localIDs = Set(tasks.map { $0.id.uuidString })
+        // 2. Find remote files not in local - these were deleted locally, create tombstones
         if let files = try? FileManager.default.contentsOfDirectory(at: tasksURL, includingPropertiesForKeys: nil) {
             for file in files where file.pathExtension == "json" {
-                let fileID = file.deletingPathExtension().lastPathComponent
-                if !localIDs.contains(fileID) {
-                    try? FileManager.default.removeItem(at: file)
+                guard let fileID = UUID(uuidString: file.deletingPathExtension().lastPathComponent),
+                      !localIDs.contains(fileID) else { continue }
+
+                // Read existing file to get current version
+                if let data = try? Data(contentsOf: file),
+                   let existing = try? decoder.decode(SyncableTask.self, from: data) {
+                    if !existing.isDeleted {
+                        // Not yet marked deleted - create tombstone
+                        let tombstone = SyncableTask.tombstone(id: fileID, version: existing.version + 1)
+                        let tombstoneData = try encoder.encode(tombstone)
+                        try tombstoneData.write(to: file)
+                    }
+                    // else: already a tombstone, leave it
                 }
             }
         }
@@ -336,21 +532,36 @@ class SyncManager: ObservableObject {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = .prettyPrinted
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
 
+        let localIDs = Set(notes.map { $0.id })
+
+        // 1. Push all local notes (increment version)
         for note in notes {
-            let syncable = SyncableNote(from: note)
+            note.syncVersion += 1
+            let syncable = SyncableNote(from: note, version: note.syncVersion)
             let data = try encoder.encode(syncable)
             let fileURL = notesURL.appendingPathComponent("\(note.id.uuidString).json")
             try data.write(to: fileURL)
         }
 
-        // Remove deleted notes
-        let localIDs = Set(notes.map { $0.id.uuidString })
+        // 2. Find remote files not in local - these were deleted locally, create tombstones
         if let files = try? FileManager.default.contentsOfDirectory(at: notesURL, includingPropertiesForKeys: nil) {
             for file in files where file.pathExtension == "json" {
-                let fileID = file.deletingPathExtension().lastPathComponent
-                if !localIDs.contains(fileID) {
-                    try? FileManager.default.removeItem(at: file)
+                guard let fileID = UUID(uuidString: file.deletingPathExtension().lastPathComponent),
+                      !localIDs.contains(fileID) else { continue }
+
+                // Read existing file to get current version
+                if let data = try? Data(contentsOf: file),
+                   let existing = try? decoder.decode(SyncableNote.self, from: data) {
+                    if !existing.isDeleted {
+                        // Not yet marked deleted - create tombstone
+                        let tombstone = SyncableNote.tombstone(id: fileID, version: existing.version + 1)
+                        let tombstoneData = try encoder.encode(tombstone)
+                        try tombstoneData.write(to: file)
+                    }
+                    // else: already a tombstone, leave it
                 }
             }
         }
@@ -370,7 +581,6 @@ class SyncManager: ObservableObject {
 
         var updatedTasks: [TodoTask] = []
         let localByID = Dictionary(uniqueKeysWithValues: localTasks.map { ($0.id, $0) })
-        var remoteIDs = Set<UUID>()
 
         guard let files = try? FileManager.default.contentsOfDirectory(at: tasksURL, includingPropertiesForKeys: nil) else {
             status = .inSync
@@ -378,29 +588,44 @@ class SyncManager: ObservableObject {
         }
 
         for file in files where file.pathExtension == "json" {
-            guard let data = try? Data(contentsOf: file),
-                  let syncable = try? decoder.decode(SyncableTask.self, from: data) else { continue }
+            guard let data = try? Data(contentsOf: file) else { continue }
 
-            remoteIDs.insert(syncable.id)
-
-            if let localTask = localByID[syncable.id] {
-                // Update existing
-                syncable.apply(to: localTask)
-                updatedTasks.append(localTask)
+            // Try new format first, then legacy format
+            let remote: SyncableTask
+            if let newFormat = try? decoder.decode(SyncableTask.self, from: data) {
+                remote = newFormat
+            } else if let legacy = try? decoder.decode(LegacySyncableTask.self, from: data) {
+                remote = legacy.toNew()
             } else {
-                // Create new
-                let newTask = TodoTask(title: syncable.title)
-                newTask.id = syncable.id
-                syncable.apply(to: newTask)
-                newTask.createdAt = syncable.createdAt
+                continue
+            }
+
+            if remote.isDeleted {
+                // Remote says deleted - remove local if exists
+                if let localTask = localByID[remote.id] {
+                    context.delete(localTask)
+                }
+                // Keep tombstone file (cleanup job will remove after 7 days)
+            } else if let localTask = localByID[remote.id] {
+                // Both have it - compare versions
+                if remote.version > localTask.syncVersion {
+                    // Remote is newer - update local
+                    remote.apply(to: localTask)
+                    localTask.syncVersion = remote.version
+                    updatedTasks.append(localTask)
+                }
+                // else: local is same or newer, will push later
+            } else {
+                // Remote has it, local doesn't - create local
+                guard let taskData = remote.data else { continue }
+                let newTask = TodoTask(title: taskData.title)
+                newTask.id = remote.id
+                newTask.syncVersion = remote.version
+                remote.apply(to: newTask)
+                newTask.createdAt = taskData.createdAt
                 context.insert(newTask)
                 updatedTasks.append(newTask)
             }
-        }
-
-        // Delete tasks not in remote
-        for task in localTasks where !remoteIDs.contains(task.id) {
-            context.delete(task)
         }
 
         lastSyncTime = Date()
@@ -411,13 +636,13 @@ class SyncManager: ObservableObject {
     }
 
     func pullNotes(context: ModelContext, localNotes: [Note]) throws -> [Note] {
+        isPushing = false
         status = .syncing
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
 
         var updatedNotes: [Note] = []
         let localByID = Dictionary(uniqueKeysWithValues: localNotes.map { ($0.id, $0) })
-        var remoteIDs = Set<UUID>()
 
         guard let files = try? FileManager.default.contentsOfDirectory(at: notesURL, includingPropertiesForKeys: nil) else {
             status = .inSync
@@ -425,27 +650,45 @@ class SyncManager: ObservableObject {
         }
 
         for file in files where file.pathExtension == "json" {
-            guard let data = try? Data(contentsOf: file),
-                  let syncable = try? decoder.decode(SyncableNote.self, from: data) else { continue }
+            guard let data = try? Data(contentsOf: file) else { continue }
 
-            remoteIDs.insert(syncable.id)
-
-            if let localNote = localByID[syncable.id] {
-                syncable.apply(to: localNote)
-                updatedNotes.append(localNote)
+            // Try new format first, then legacy format
+            let remote: SyncableNote
+            if let newFormat = try? decoder.decode(SyncableNote.self, from: data) {
+                remote = newFormat
+            } else if let legacy = try? decoder.decode(LegacySyncableNote.self, from: data) {
+                remote = legacy.toNew()
             } else {
-                let newNote = Note(title: syncable.title, body: syncable.body,
-                                 position: syncable.position, folderName: syncable.folderName)
-                newNote.id = syncable.id
-                newNote.createdAt = syncable.createdAt
-                newNote.updatedAt = syncable.updatedAt
+                continue
+            }
+
+            if remote.isDeleted {
+                // Remote says deleted - remove local if exists
+                if let localNote = localByID[remote.id] {
+                    context.delete(localNote)
+                }
+                // Keep tombstone file (cleanup job will remove after 7 days)
+            } else if let localNote = localByID[remote.id] {
+                // Both have it - compare versions
+                if remote.version > localNote.syncVersion {
+                    // Remote is newer - update local
+                    remote.apply(to: localNote)
+                    localNote.syncVersion = remote.version
+                    updatedNotes.append(localNote)
+                }
+                // else: local is same or newer, will push later
+            } else {
+                // Remote has it, local doesn't - create local
+                guard let noteData = remote.data else { continue }
+                let newNote = Note(title: noteData.title, body: noteData.body,
+                                 position: noteData.position, folderName: noteData.folderName)
+                newNote.id = remote.id
+                newNote.syncVersion = remote.version
+                newNote.createdAt = noteData.createdAt
+                newNote.updatedAt = noteData.updatedAt
                 context.insert(newNote)
                 updatedNotes.append(newNote)
             }
-        }
-
-        for note in localNotes where !remoteIDs.contains(note.id) {
-            context.delete(note)
         }
 
         lastSyncTime = Date()
@@ -453,5 +696,105 @@ class SyncManager: ObservableObject {
         status = .inSync
 
         return updatedNotes
+    }
+
+    func pushColumns(_ columns: [BoardColumn]) throws {
+        isPushing = true
+        status = .syncing
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = .prettyPrinted
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let localIDs = Set(columns.map { $0.id })
+
+        // 1. Push all local columns (increment version)
+        for column in columns {
+            column.syncVersion += 1
+            let syncable = SyncableBoardColumn(from: column, version: column.syncVersion)
+            let data = try encoder.encode(syncable)
+            let fileURL = columnsURL.appendingPathComponent("\(column.id.uuidString).json")
+            try data.write(to: fileURL)
+        }
+
+        // 2. Find remote files not in local - these were deleted locally, create tombstones
+        if let files = try? FileManager.default.contentsOfDirectory(at: columnsURL, includingPropertiesForKeys: nil) {
+            for file in files where file.pathExtension == "json" {
+                guard let fileID = UUID(uuidString: file.deletingPathExtension().lastPathComponent),
+                      !localIDs.contains(fileID) else { continue }
+
+                // Read existing file to get current version
+                if let data = try? Data(contentsOf: file),
+                   let existing = try? decoder.decode(SyncableBoardColumn.self, from: data) {
+                    if !existing.isDeleted {
+                        // Not yet marked deleted - create tombstone
+                        let tombstone = SyncableBoardColumn.tombstone(id: fileID, version: existing.version + 1)
+                        let tombstoneData = try encoder.encode(tombstone)
+                        try tombstoneData.write(to: file)
+                    }
+                    // else: already a tombstone, leave it
+                }
+            }
+        }
+
+        lastSyncTime = Date()
+        lastLocalChange = nil
+        status = .inSync
+    }
+
+    func pullColumns(context: ModelContext, localColumns: [BoardColumn]) throws -> [BoardColumn] {
+        isPushing = false
+        status = .syncing
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        var updatedColumns: [BoardColumn] = []
+        let localByID = Dictionary(uniqueKeysWithValues: localColumns.map { ($0.id, $0) })
+
+        guard let files = try? FileManager.default.contentsOfDirectory(at: columnsURL, includingPropertiesForKeys: nil) else {
+            status = .inSync
+            return []
+        }
+
+        for file in files where file.pathExtension == "json" {
+            guard let data = try? Data(contentsOf: file) else { continue }
+
+            guard let remote = try? decoder.decode(SyncableBoardColumn.self, from: data) else {
+                continue
+            }
+
+            if remote.isDeleted {
+                // Remote says deleted - remove local if exists
+                if let localColumn = localByID[remote.id] {
+                    context.delete(localColumn)
+                }
+                // Keep tombstone file (cleanup job will remove after 7 days)
+            } else if let localColumn = localByID[remote.id] {
+                // Both have it - compare versions
+                if remote.version > localColumn.syncVersion {
+                    // Remote is newer - update local
+                    remote.apply(to: localColumn)
+                    localColumn.syncVersion = remote.version
+                    updatedColumns.append(localColumn)
+                }
+                // else: local is same or newer, will push later
+            } else {
+                // Remote has it, local doesn't - create local
+                guard let columnData = remote.data else { continue }
+                let newColumn = BoardColumn(name: columnData.name, icon: columnData.icon,
+                                           position: columnData.position, isSystem: columnData.isSystem)
+                newColumn.id = remote.id
+                newColumn.syncVersion = remote.version
+                context.insert(newColumn)
+                updatedColumns.append(newColumn)
+            }
+        }
+
+        lastSyncTime = Date()
+        pendingRemoteChanges = 0
+        status = .inSync
+
+        return updatedColumns
     }
 }
