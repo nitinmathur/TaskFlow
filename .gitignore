@@ -39,3 +39,7 @@ playground.xcworkspace
 *.store
 *.store-shm
 *.store-wal
+
+# Planning (keep codebase docs only)
+.planning/*
+!.planning/codebase/
