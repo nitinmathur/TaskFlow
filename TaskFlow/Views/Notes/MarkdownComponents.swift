@@ -244,6 +244,35 @@ struct ToolbarDivider: View {
     }
 }
 
+// MARK: - Custom NSTextView with Keyboard Shortcuts
+
+/// Custom NSTextView subclass that handles markdown formatting keyboard shortcuts
+class MarkdownNSTextView: NSTextView {
+    weak var formatCoordinator: TextViewCoordinator?
+
+    override func keyDown(with event: NSEvent) {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+
+        // Cmd+B: Bold
+        if flags == .command && event.charactersIgnoringModifiers == "b" {
+            formatCoordinator?.applyFormatting(prefix: "**", suffix: "**", placeholder: "bold")
+            return
+        }
+        // Cmd+I: Italic
+        if flags == .command && event.charactersIgnoringModifiers == "i" {
+            formatCoordinator?.applyFormatting(prefix: "_", suffix: "_", placeholder: "italic")
+            return
+        }
+        // Cmd+Shift+H: Heading
+        if flags == [.command, .shift] && event.charactersIgnoringModifiers?.lowercased() == "h" {
+            formatCoordinator?.insertAtLineStart(prefix: "## ", placeholder: "Heading")
+            return
+        }
+
+        super.keyDown(with: event)
+    }
+}
+
 // MARK: - Markdown Text Editor (NSTextView with MarkdownTextStorage)
 
 struct MarkdownTextEditor: NSViewRepresentable {
@@ -264,8 +293,8 @@ struct MarkdownTextEditor: NSViewRepresentable {
         textContainer.heightTracksTextView = false
         layoutManager.addTextContainer(textContainer)
 
-        // Create text view with custom text storage
-        let textView = NSTextView(frame: .zero, textContainer: textContainer)
+        // Create text view with custom text storage and keyboard shortcuts
+        let textView = MarkdownNSTextView(frame: .zero, textContainer: textContainer)
         textView.delegate = context.coordinator
         textView.isRichText = false
         textView.backgroundColor = .clear
@@ -283,6 +312,7 @@ struct MarkdownTextEditor: NSViewRepresentable {
 
         // Store reference in coordinator for toolbar access
         self.coordinator.textView = textView
+        textView.formatCoordinator = self.coordinator
 
         // Create scroll view
         let scrollView = NSScrollView()
@@ -303,10 +333,11 @@ struct MarkdownTextEditor: NSViewRepresentable {
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        guard let textView = scrollView.documentView as? NSTextView else { return }
+        guard let textView = scrollView.documentView as? MarkdownNSTextView else { return }
 
         // Update coordinator reference
         self.coordinator.textView = textView
+        textView.formatCoordinator = self.coordinator
 
         // Only update if text has changed externally
         if textView.string != text {
